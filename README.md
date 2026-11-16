@@ -1,9 +1,12 @@
 # AstroGuard: Health Monitoring for Astronauts on Space Missions
 
 **NASA Space Apps Challenge 2026: Create Health Monitoring Software for Astronauts on Space Missions**
-(challenge by the Brazilian Space Agency, AEB)
+(challenge by the Brazilian Space Agency, AEB) · Team **Orbit & Co**
 
-> *"Imagine you're halfway to Mars. Suddenly your crewmate feels a sharp pain in the chest and collapses. What should you do?"*
+🌐 **Live demo:** https://astroguard-a3xh.onrender.com (free hosting: the first load may take up to a minute to wake up. Demo codes are on the login screen.)
+💻 **Code:** https://github.com/mythilias/nasa-spaceapp-hackathon-astroguard
+
+> *Three months into the journey to Mars, an astronaut wakes up with a headache and feels unusually tired. Is it the cabin air, poor sleep, or something more? The flight surgeon is 12 minutes away.*
 
 Today's astronaut health monitoring depends on the ground: wearables send data down and flight
 surgeons interpret it. Halfway to Mars, Earth is **up to 22 minutes away**, and for about two weeks
@@ -12,6 +15,16 @@ monitoring onboard:
 - a personal health app for every astronaut,
 - AI agents that reason about health with the same privacy rules as the humans, and
 - a ground station that stays in sync over a realistic delayed space link.
+
+## Screenshots
+**Choose your system:** a spacecraft app for the crew and a ground station app for mission control.
+![AstroGuard login: choose Spacecraft App or Ground Station App](screenshots/index.png)
+
+**Astronaut dashboard with the AstroGuard AI assistant:** personal vitals, trends, recommendations, and an assistant docked on every screen.
+![Kenji's dashboard with the AI assistant panel](screenshots/kenji-dashboard.png)
+
+**Ground station, flight surgeon view:** the whole crew's health with the link delay, and the assistant ranking who needs attention first.
+![Flight surgeon crew board on the ground station](screenshots/groundstation-dr-dashboard.png)
 
 ## What makes it different
 | | |
@@ -189,13 +202,10 @@ AstroGuard loads **NASA OSDR [OSD-575](https://osdr.nasa.gov/bio/repo/data/studi
 - **Canadian Space Agency Bio-Monitor (Astroskin):** the [space-qualified wearable](https://www.asc-csa.gc.ca/eng/sciences/astroskin.asp) whose measurements (heart rate, ECG, blood pressure, breathing, SpO2, temperature) informed which "wearable" indicators AstroGuard assumes are available.
 - **NASA Delay/Disruption Tolerant Networking:** the inspiration for the store-and-forward link design.
 
-## Limitations (and what a flight system would need)
-1. **The AI must run onboard.** From Mars, a cloud API has the same 6–44 minute round trip as the flight surgeon, and none at all during solar conjunction. The demo uses Claude in the cloud as a **stand-in**; a flight version would run an onboard model on space-qualified, radiation-tolerant hardware and pass NASA software assurance (NPR 7150.2, NASA-STD-8739.8). Detection and emergency protocols are deliberately **rule-based and fully offline**, so safety never depends on the AI.
-2. **Health data sent to an outside AI provider** would need formal agreements (for example a HIPAA business associate agreement, zero data retention, and a government-authorized cloud such as FedRAMP), plus export-control review. AstroGuard already sends the AI **minimum necessary** data: crew codes instead of names, and private data only for the person asking.
-3. **AI in healthcare is high-risk** (Anthropic Usage Policy): AstroGuard labels all AI output, never gives medication doses, detects red flags with fixed code, and routes decisions to qualified humans (CMO, flight surgeon). In a real system, medical staff would pre-approve the knowledge base and protocols.
-4. **Storage:** the demo database is not encrypted, keeps records indefinitely, and logs views but not edits. Real medical records need encryption at rest, a retention policy, full change auditing, and separate de-identified research data.
-5. **Login** uses demo access codes (no MFA, no lockout, no HTTPS). It binds to localhost only.
-6. **Data:** all crew data is **synthetic** and the crew are fictional. Thresholds are **demo values, not clinical limits**. Knowledge base passages are paraphrased summaries and should be checked against the primary NASA sources. **Not a medical device.**
+## Limitations
+- **Onboard AI:** the demo uses a cloud AI model; a Mars mission would need it to run on the spacecraft.
+- **Real health data:** would require formal privacy agreements, encryption and stronger login security.
+- **Prototype only:** synthetic crew data and demo thresholds, not validated for clinical use.
 
 ## Disclaimer
 - **Not a medical device and not medical advice.** AstroGuard is a hackathon prototype. Do not use it to make health decisions.
