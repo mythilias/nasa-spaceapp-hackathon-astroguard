@@ -23,6 +23,9 @@ monitoring onboard:
 **Astronaut dashboard with the AstroGuard AI assistant:** personal vitals, trends, recommendations, and an assistant docked on every screen.
 ![Kenji's dashboard with the AI assistant panel](screenshots/kenji-dashboard.png)
 
+**AstroGuard AI assistant:** short answers from the astronaut's own data, with NASA sources.
+<img src="screenshots/ai-assistant-chat.png" alt="AstroGuard assistant answering Why is my blood pressure going up?" width="360">
+
 **Ground station, flight surgeon view:** the whole crew's health with the link delay, and the assistant ranking who needs attention first.
 ![Flight surgeon crew board on the ground station](screenshots/groundstation-dr-dashboard.png)
 
