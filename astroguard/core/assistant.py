@@ -307,8 +307,11 @@ class MedicalAssistant:
                 cites.append({"id": d["id"], "title": d["title"], "source": d["source"]})
             return docs
 
-        def first_sentences(d, n=2):
-            return f"{'. '.join(d['text'].split('. ')[:n]).rstrip('.')}. [{d['id']}]"
+        def first_sentences(d, n=1, cap=150):
+            s = '. '.join(d['text'].split('. ')[:n]).rstrip('.')
+            if len(s) > cap:
+                s = s[:cap].rsplit(' ', 1)[0].rstrip(',;:') + '…'
+            return f"{s}{'' if s.endswith('…') else '.'} [{d['id']}]"
 
         ind = next((k for rx, k in self.INDICATOR_WORDS if re.search(rx, t)), None)
         crew = [c for c, rx in self.CREW_WORDS.items() if re.search(rx, t) and c != user.get("crew_id")]
@@ -318,81 +321,58 @@ class MedicalAssistant:
 
         if red:
             p = EMERGENCY_PROTOCOLS[red]
-            out.append(f"⚠ **This may be an emergency: start EMERGENCY mode now ({p['title']}).**")
-            out += [f"{i}. {s}" for i, s in enumerate(p["steps"][:4], 1)]
-            out.append("The full protocol opens when you press Start emergency. The flight surgeon is notified with an automatic situation report.")
-            d = kb(p["title"])
-            if d:
-                out.append(first_sentences(d[0]))
+            out.append(f"⚠ **Possible emergency: start EMERGENCY mode now ({p['title']}).**")
+            out += [f"{i}. {s}" for i, s in enumerate(p["steps"][:3], 1)]
+            out.append("The flight surgeon gets an automatic situation report.")
         elif crew and not has_crew_tool:
-            out.append(f"🔒 I can't share {', '.join(crew)}'s health data with you. Following NASA medical-privacy practice, "
-                       "a crew member's medical details stay between them, the flight surgeon and (when needed) the Crew Medical Officers.")
-            out.append("If you're worried about a crewmate, tell the Crew Medical Officer. If it's urgent, press ⚠ EMERGENCY.")
+            out.append(f"🔒 I can't share {', '.join(crew)}'s health data: it stays between them and the flight surgeon.")
+            out.append("Worried about a crewmate? Tell the Crew Medical Officer, or press ⚠ EMERGENCY if urgent.")
         elif re.search(r"how (do|to|should) i (measure|take|check|use)|how to measure|measur", t) and ind:
             g = call("get_measurement_guide", {"indicator": ind})
             out.append(f"**How to measure {g['name'].lower()} in space:**")
             out += [f"{i}. {s}" for i, s in enumerate(g["how"], 1)]
-            out.append(f"**Why it matters:** {g['why']}")
-            out.append(f"**Normal:** {g['normal']}. If it looks off: {g['actions']['warn'][0]} (Self-care); "
-                       f"if it's well out of range: {g['actions']['crit'][0]} (Flight surgeon).")
-            if ind == "blood_glucose":
-                d = kb("Inspiration4 real flight data blood sugar glucose")
-                if d and d[0]["id"].startswith("osdr"):
-                    out.append("🛰 " + first_sentences(d[0], 2))
+            out.append(f"**Normal:** {g['normal']}.")
         elif re.search(r"cabin|air|co2|carbon|radiation|habitat|pressure (in|of) the|leak", t) and ind != "blood_pressure":
             c = call("get_cabin_environment")
             cab, rad = c.get("cabin") or {}, c.get("radiation") or {}
             if not cab:
-                return {"reply": "📡 No data from the spacecraft yet: waiting for the first downlink bundle. Try again in a few seconds.",
+                return {"reply": "📡 No data from the spacecraft yet. Try again in a few seconds.",
                         "mode": "rule-based", "tools_used": used, "citations": []}
-            out.append(f"**Cabin right now ({c['mission_environment']}):** CO₂ {cab.get('co2_mmHg', '?')} mmHg, "
-                       f"pressure {cab.get('pressure_kPa', '?')} kPa, O₂ {cab.get('o2_pct', '?')}%, "
-                       f"radiation {round(rad.get('dose_rate_uSv_h', 0))} µSv/h.")
+            out.append(f"**Cabin now:** CO₂ {cab.get('co2_mmHg', '?')} mmHg · pressure {cab.get('pressure_kPa', '?')} kPa · "
+                       f"O₂ {cab.get('o2_pct', '?')}% · radiation {round(rad.get('dose_rate_uSv_h', 0))} µSv/h.")
             if c["cabin_alerts"]:
-                out.append("⚠ Active habitat alerts: " + "; ".join(a["title"] for a in c["cabin_alerts"]) + ".")
-                d = kb(" ".join(a["title"] for a in c["cabin_alerts"]))
+                out.append("⚠ " + "; ".join(a["title"] for a in c["cabin_alerts"]) + ".")
             else:
                 ok = (cab.get("co2_mmHg", 0) <= 4 and cab.get("pressure_kPa", 101) >= 97)
-                out.append("All habitat readings are within the demo limits." if ok else "Some readings are above the demo limits; check the Habitat panel.")
-                d = kb("cabin carbon dioxide CO2 scrubber")
-            if d:
-                out.append(first_sentences(d[0]))
+                out.append("✅ All within limits." if ok else "⚠ Some readings are high: check the Habitat panel.")
         elif crew and has_crew_tool:
             for c in crew[:2]:
                 v = call("get_crewmate_status", {"crew_code": c})
-                line = f"**{c}:** {v['duty']} (overall {self.STATUS_WORD.get(v['overall'], v['overall'])})"
-                if v.get("restrictions"):
-                    line += "; restrictions: " + "; ".join(v["restrictions"])
+                line = f"**{c}:** {v['duty']} ({self.STATUS_WORD.get(v['overall'], v['overall'])})"
                 if "indicators" in v:
-                    flagged = [f"{k.replace('_', ' ')} {i['value']} {i['unit']}" for k, i in v["indicators"].items() if i["status"] in ("warn", "crit")]
-                    line += ". " + ("Flagged: " + ", ".join(flagged) if flagged else "All indicators normal")
+                    flagged = [f"{k.replace('_', ' ')} {i['value']} {i['unit']}" for k, i in v["indicators"].items()
+                               if i["status"] in ("warn", "crit") and k != "exercise_min"]
+                    line += ". " + ("Flagged: " + ", ".join(flagged) if flagged else "All normal")
                     out.append(line + ".")
                     if re.search(r"summar|trend|week|history|doing", t) and v.get("two_week_trends"):
-                        names = {"systolic": "Systolic BP", "glucose": "Blood sugar", "body_temp": "Temperature", "sleep_hours": "Sleep", "mood": "Mood"}
-                        out += [f"- {names[f]}: {s['first_week_avg']} → {s['second_week_avg']} (latest {s['latest']})" for f, s in v["two_week_trends"].items()]
-                    out += [f"- Trend: {n}" for n in v.get("trend_notes", [])]
+                        names = {"systolic": "BP", "glucose": "Sugar", "body_temp": "Temp", "sleep_hours": "Sleep", "mood": "Mood"}
+                        out.append(" · ".join(f"{names[f]} {s['first_week_avg']}→{s['second_week_avg']}" for f, s in v["two_week_trends"].items()))
                 else:
-                    out.append(line + f". 🔒 {v.get('note', 'Medical details restricted')}.")
-            out.append(f"Your access: {v['access_reason']}.")
+                    out.append(line + ". 🔒 Medical details restricted for your role.")
         elif has_crew_tool and re.search(r"who needs|attention first|which crew|everyone|whole crew|all crew|fit for", t):
             rank = {"crit": 0, "warn": 1, "ok": 2}
             rows = sorted((call("get_crewmate_status", {"crew_code": c}) for c in ("CDR", "PLT", "MS1", "MS2")),
                           key=lambda v: rank.get(v["overall"], 3))
-            out.append("**Crew overview (most urgent first):**")
+            out.append("**Most urgent first:**")
             for v in rows:
-                extra = ("; " + "; ".join(v["restrictions"])) if v.get("restrictions") else ""
                 why = ""
                 if "indicators" in v:
                     flagged = [f"{k.replace('_', ' ')} {i['value']} {i['unit']}" for k, i in v["indicators"].items()
                                if i["status"] in ("warn", "crit") and k != "exercise_min"]
                     why = (": " + ", ".join(flagged)) if flagged else ""
-                    if v.get("trend_notes"):
-                        why += ("; " if why else ": ") + "; ".join(v["trend_notes"][:1])
-                out.append(f"- **{v['crew_code']}**: {v['duty']} ({self.STATUS_WORD.get(v['overall'], v['overall'])}){why}{extra}")
-            if re.search(r"spacewalk|eva", t):
-                out.append("Anyone with a restriction such as 'No spacewalk' or an out-of-range reading should not be assigned. Confirm with the flight surgeon.")
+                out.append(f"- **{v['crew_code']}** {v['duty']}{why}")
             if any("indicators" not in v for v in rows):
-                out.append("🔒 For some crew you see operational status only; medical reasons are visible to the flight surgeon.")
+                out.append("🔒 Medical reasons are visible to the flight surgeon only.")
         elif mine and re.search(r"trend|going up|going down|rising|increas|decreas|worse|why is my|last (week|two weeks)|history", t):
             metric = ind if ind in ("blood_pressure", "blood_glucose", "body_temp", "sleep_hours", "mood") else "blood_pressure"
             tr = call("get_my_trend", {"metric": metric})["last_14_days"]
@@ -400,63 +380,53 @@ class MedicalAssistant:
             if len(vals) >= 4:
                 a, b = sum(vals[:len(vals) // 2]) / (len(vals) // 2), sum(vals[len(vals) // 2:]) / (len(vals) - len(vals) // 2)
                 word = "rising" if b > a * 1.02 else "falling" if b < a * 0.98 else "steady"
-                out.append(f"**Your {metric.replace('_', ' ')} over 14 days is {word}:** average {a:.1f} → {b:.1f} (last: {vals[-1]}).")
+                out.append(f"**Your {metric.replace('_', ' ')} is {word}:** {a:.0f} → {b:.0f} over 14 days (last {vals[-1]:g}).")
             s = call("get_my_health_summary")
-            recs = [r for r in s["recommendations"] if metric.split("_")[-1] in r["title"].lower() or metric.replace("_", " ") in r["title"].lower()]
-            for r in recs[:2]:
-                out.append(f"- {r['title']} ({r['tier']})")
+            recs = [r for r in s["recommendations"] if metric.split("_")[-1] in r["title"].lower()]
+            if recs:
+                out.append(f"{recs[0]['title']} ({recs[0]['tier']}).")
             d = kb(f"{metric.replace('_', ' ')} spaceflight")
             if d:
-                out.append(first_sentences(d[0]))
-            out.append("Keep measuring at the same time each morning so the trend stays reliable (Self-care).")
+                out.append(first_sentences(d[0], 1, 110))
+            out.append("Tip: measure at the same time each morning (Self-care).")
         elif mine and (ind or re.search(r"headache|tired|fatigue|dizzy|nause|sick|unwell|feel|pain|ache|how am i|my health|status|ok\?", t)):
             s = call("get_my_health_summary")
-            flagged = {k: i for k, i in s["indicators"].items() if i["status"] in ("warn", "crit")}
+            flagged = {k: i for k, i in s["indicators"].items() if i["status"] in ("warn", "crit") and k != "exercise_min"}
             if ind and ind in s["indicators"]:
                 i = s["indicators"][ind]
-                out.append(f"**Your {ind.replace('_', ' ')}: {i['value']} {i['unit']}** ({self.STATUS_WORD.get(i['status'])}, from {i['source']}).")
+                out.append(f"**Your {ind.replace('_', ' ')}: {i['value']} {i['unit']}** ({self.STATUS_WORD.get(i['status'])}).")
                 if ind == "blood_glucose":
                     from . import nasa_data
                     try:
-                        ref = nasa_data.compare("glucose", float(i["value"]))
-                    except (TypeError, ValueError):
-                        ref = None
-                    if ref:
+                        ref = nasa_data.summary("glucose")
+                        pre = ref["phases"]["pre_flight"]
                         used.append("get_spaceflight_reference")
                         cites.append({"id": "osdr-575-glucose", "title": "Real flight data: blood sugar (Inspiration4)", "source": nasa_data.DATASET_TITLE})
-                        out.append("🛰 " + ref)
-            out.append(f"**Overall:** {s['duty']}." + (" Flagged: " + ", ".join(f"{k.replace('_', ' ')} {i['value']} {i['unit']}" for k, i in flagged.items()) + "." if flagged else " No readings are out of range."))
+                        out.append(f"🛰 Inspiration4 crew before launch: {pre['min']:g}–{pre['max']:g} mg/dL (NASA OSDR). [osdr-575-glucose]")
+                    except (TypeError, ValueError, KeyError):
+                        pass
             if re.search(r"headache|tired|fatigue|dizzy|nause", t):
                 c = call("get_cabin_environment")
                 co2 = (c.get("cabin") or {}).get("co2_mmHg")
                 sleep = s["indicators"].get("sleep_hours", {}).get("value")
                 causes = []
                 if co2 and co2 > 3.5:
-                    causes.append(f"cabin CO₂ is elevated ({co2} mmHg), a common cause of headache and tiredness in spacecraft")
+                    causes.append(f"cabin CO₂ is high ({co2} mmHg)")
                 if sleep and float(sleep) < 6.5:
                     causes.append(f"your sleep was short ({sleep} h)")
-                out.append("**Possible contributors:** " + ("; ".join(causes) if causes else f"cabin CO₂ ({co2} mmHg) and your sleep ({sleep} h) look acceptable, so watch for other causes") + ".")
-                d = kb("headache fatigue CO2 sleep loss")
-                if d:
-                    out.append(first_sentences(d[0]))
-                out.append("**Next steps:** hydrate and rest 20 minutes, then re-check (Self-care). Move to a well-ventilated module. "
-                           "If it persists or worsens, tell the Crew Medical Officer. Severe headache with confusion or vision changes: Flight surgeon now.")
-            for r in s["recommendations"][:2]:
-                if not ind or ind.split("_")[-1] in r["title"].lower():
-                    out.append(f"- {r['title']} ({r['tier']})")
+                out.append("**Likely:** " + ("; ".join(causes) if causes else f"cabin CO₂ ({co2} mmHg) and sleep ({sleep} h) look fine") + ".")
+                out.append("**Next:** hydrate and rest 20 min (Self-care). If it persists, tell the Crew Medical Officer.")
+            elif not ind:
+                out.append(f"**Overall:** {s['duty']}." + (" Flagged: " + ", ".join(f"{k.replace('_', ' ')} {i['value']} {i['unit']}" for k, i in flagged.items()) + "." if flagged else " Nothing out of range."))
         else:
-            d = kb(text, n=2)
+            d = kb(text, n=1)
             if d:
-                out.append(first_sentences(d[0], 3))
-            if mine:
-                s = call("get_my_health_summary")
-                out.append(f"Your current status: {s['duty']}.")
-            out.append("Tap any tile on My Health for step-by-step measuring and what-to-do guidance.")
+                out.append(first_sentences(d[0], 1, 140))
+            out.append("Tap any tile on My Health for measuring and what-to-do guidance.")
 
         why = f" ({error})" if error else ""
         uniq = list({c["id"]: c for c in cites}.values())
-        return {"reply": "\n".join(out), "mode": "rule-based", "tools_used": used, "citations": uniq,
-                "notice": f"AI model unavailable{why}: answered by AstroGuard's rule-based assistant from your data and the NASA knowledge base."}
+        return {"reply": "\n".join(out), "mode": "rule-based", "tools_used": used, "citations": uniq}
 
     # ---------------------------------------------------------------- ground briefing (SBAR)
     def briefing(self, patient_view: dict, protocol: str, declared_by: str, env: dict) -> tuple[str, str]:
