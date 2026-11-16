@@ -3,7 +3,8 @@ __pycache__/
 data/
 .env
 .venv/
-# challenge reference material (not ours to redistribute)
-NASA Space Apps Challenge.pdf
-video_transcript.txt
-project submission.pdf
+# local reference material and working notes (not part of the project)
+*.pdf
+*transcript*.txt
+SUBMISSION.md
+DEMO_SCRIPT.md
