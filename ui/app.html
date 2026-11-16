@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="generator" content="Developed with assistance from Claude Code (Anthropic SI); see SI_DISCLOSURE.md">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AstroGuard Crew Health</title>
+<style>
+  :root {
+    --bg: #0a0e16; --panel: #121826; --panel2: #182033; --line: #253047;
+    --text: #e8edf6; --muted: #8b98b2; --accent: #5aa9ff; --accent2: #7c5cff;
+    --ok: #3ccf91; --warn: #f5b642; --crit: #ff5d5d; --none: #5b6680; --improve: #5aa9ff;
+    --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #06101f; font-weight: 600; }
+  button.sos { background: var(--crit); border-color: var(--crit); color: #fff; font-weight: 700; letter-spacing: .5px; }
+  button.sos:hover { filter: brightness(1.1); }
+  input, select, textarea { font: inherit; color: var(--text); background: #0d1320; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  a { color: var(--accent); }
+  .muted { color: var(--muted); } .mono { font-family: var(--mono); }
+  .hidden { display: none !important; }
+
+  /* login */
+  #login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    background: radial-gradient(1200px 600px at 70% -10%, #1b2a55 0%, transparent 60%), var(--bg); }
+  .login-card { width: 100%; max-width: 780px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
+  .brand { font-size: 28px; font-weight: 800; letter-spacing: .5px; margin: 0; } .brand span { color: var(--accent); }
+  .sys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 600px) { .sys-grid { grid-template-columns: 1fr; } }
+  .sys-card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel2); }
+  .sys-card:hover { border-color: var(--accent); }
+  .sys-card.on { border-color: var(--accent); background: #0f1d33; box-shadow: 0 0 0 3px rgba(90, 169, 255, .15); }
+  .sys-card .sys-ico { font-size: 34px; line-height: 1; }
+  .codes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 14px; }
+  .codes button { text-align: left; padding: 8px 10px; }
+  .codes b { display: block; font-size: 13px; } .codes small { color: var(--muted); font-size: 11px; display: block; }
+  .codes .mono { color: var(--accent); font-size: 12px; }
+
+  /* shell */
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; flex-wrap: wrap; }
+  header .brand { font-size: 20px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+  .grow { flex: 1; }
+  nav { display: flex; gap: 4px; padding: 8px 20px 0; border-bottom: 1px solid var(--line); background: var(--panel); overflow-x: auto; }
+  nav button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 14px; color: var(--muted); white-space: nowrap; }
+  nav button.on { color: var(--text); border-bottom-color: var(--accent); }
+  main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 60px; }
+  @media (max-width: 700px) { main { padding: 14px 16px 60px; } header, nav { padding-left: 16px; padding-right: 16px; } }
+  .banner { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .banner.crit { border-color: var(--crit); background: #2a1215; }
+  .banner.warn { border-color: var(--warn); background: #2a2110; }
+  .banner.info { border-color: var(--accent); background: #0f1d33; }
+  .grid { display: grid; gap: 14px; }
+  .g2 { grid-template-columns: 1.4fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 980px) { .g2, .g3 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 10px; }
+  h3 { margin: 0 0 6px; font-size: 16px; }
+
+  /* status hero */
+  .hero { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .ring { width: 86px; height: 86px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; border: 6px solid var(--ok); flex: none; }
+  .ring.warn { border-color: var(--warn); color: var(--warn); } .ring.crit { border-color: var(--crit); color: var(--crit); } .ring.ok { color: var(--ok); }
+  .chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin: 2px 4px 2px 0; }
+  .chip.R { border-color: #9b6bff; color: #c3a8ff; } .chip.I { border-color: #f08fc0; color: #f6b6d6; } .chip.D { border-color: #5aa9ff; color: #a5ceff; } .chip.G { border-color: #3ccf91; color: #8be6bd; } .chip.E { border-color: #f5b642; color: #f8d38a; }
+
+  /* tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .tile { background: var(--panel2); border: 1px solid var(--line); border-left: 4px solid var(--none); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: transform .12s; }
+  .tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .tile.ok { border-left-color: var(--ok); } .tile.warn { border-left-color: var(--warn); } .tile.crit { border-left-color: var(--crit); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 3px rgba(255, 93, 93, .25); } }
+  .tile .lbl { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .tile .val { font-family: var(--mono); font-size: 22px; font-weight: 600; margin: 2px 0; }
+  .tile .val small { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .tile .src { font-size: 11px; color: var(--muted); }
+  .st { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; }
+  .st.ok { background: #0f3324; color: var(--ok); } .st.warn { background: #3a2c0c; color: var(--warn); } .st.crit { background: #3d1414; color: var(--crit); } .st.none { background: #1f2638; color: var(--muted); } .st.improve { background: #0f2340; color: var(--improve); }
+
+  /* recommendations */
+  .rec { border: 1px solid var(--line); border-left: 4px solid var(--improve); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--panel2); }
+  .rec.warn { border-left-color: var(--warn); } .rec.crit { border-left-color: var(--crit); }
+  .rec ul { margin: 6px 0 0; padding-left: 18px; } .rec li { margin: 2px 0; }
+  .tier { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #1c2740; color: var(--accent); }
+  .tier.fs { background: #3d1414; color: var(--crit); } .tier.cmo { background: #3a2c0c; color: var(--warn); } .tier.sc { background: #0f3324; color: var(--ok); }
+
+  /* charts */
+  .charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .chartbox { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .chartbox .t { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  canvas.chart { width: 100%; height: 90px; display: block; }
+
+  /* alerts */
+  .alert { border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--panel2); }
+  .alert.critical { border-left-color: var(--crit); }
+  .expl { margin-top: 6px; padding: 8px 10px; background: #0d1320; border: 1px dashed var(--line); border-radius: 8px; font-size: 13px; }
+  .cite { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+
+  /* check-in */
+  .form { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .field { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .field label { font-weight: 600; display: block; margin-bottom: 6px; }
+  .field details { margin-top: 8px; font-size: 13px; } .field summary { cursor: pointer; color: var(--accent); }
+  .field ol { margin: 6px 0; padding-left: 18px; }
+  .row2 { display: flex; gap: 8px; align-items: center; }
+  .moods { display: flex; gap: 6px; } .moods button { flex: 1; font-size: 22px; padding: 6px 0; }
+  .moods button.on { border-color: var(--accent); background: #13284a; }
+
+  /* body */
+  .body-wrap { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 760px) { .body-wrap { grid-template-columns: 1fr; } }
+  svg.body { width: 100%; max-width: 300px; display: block; margin: 0 auto; }
+  svg.body .part { cursor: pointer; stroke: #0a0e16; stroke-width: 2; transition: opacity .15s; }
+  svg.body .part:hover { opacity: .8; stroke: #fff; }
+  svg.body .part.sel { stroke: #fff; stroke-width: 3; }
+  svg.body text { fill: var(--muted); font-size: 9px; pointer-events: none; }
+
+  /* routine */
+  .xp { height: 10px; background: #0d1320; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .xp > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .task { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: var(--panel2); }
+  .task.due { border-color: var(--warn); } .task.done { opacity: .6; }
+  .task .time { font-family: var(--mono); color: var(--muted); width: 48px; }
+  .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .badge { text-align: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); opacity: .45; }
+  .badge.earned { opacity: 1; border-color: var(--accent2); }
+  .badge .ico { font-size: 26px; }
+
+  /* crew board */
+  .crew { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .member { background: var(--panel2); border: 1px solid var(--line); border-top: 4px solid var(--ok); border-radius: 12px; padding: 12px; }
+  .member.warn { border-top-color: var(--warn); } .member.crit { border-top-color: var(--crit); }
+  .member.clickable { cursor: pointer; } .member.clickable:hover { border-color: var(--accent); }
+  .lock { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-family: var(--mono); font-size: 12px; margin-top: 8px; }
+  .mini div { display: flex; justify-content: space-between; } .mini span { color: var(--muted); }
+
+  /* modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(3, 6, 12, .7); z-index: 50; display: grid; place-items: center; padding: 16px; }
+  .modal { width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .modal .x { float: right; }
+  .modal ol li { margin: 4px 0; }
+
+  /* emergency */
+  .emerg { border: 2px solid var(--crit); background: #1d0c0f; border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  .emerg h3 { color: var(--crit); font-size: 20px; }
+  .step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: #2a1215; margin: 6px 0; cursor: pointer; }
+  .step.done { opacity: .55; text-decoration: line-through; }
+  .step input { width: 20px; height: 20px; flex: none; margin-top: 2px; accent-color: var(--crit); }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--accent); padding: 10px 16px; border-radius: 10px; z-index: 60; }
+  /* AI assistant: docked right panel + floating button (available on every screen) */
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 100vw; z-index: 30;
+    background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column;
+    box-shadow: -12px 0 32px rgba(0, 0, 0, .35); }
+  .fab { position: fixed; right: 20px; bottom: 20px; z-index: 35; border-radius: 999px; padding: 12px 18px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; box-shadow: 0 8px 24px rgba(90, 169, 255, .35); }
+  .fab:hover { filter: brightness(1.08); }
+  body.ai-open .fab { right: 440px; }
+  @media (min-width: 1100px) { body.ai-open #app { margin-right: 420px; } }
+  @media (max-width: 1750px) { body.ai-open #envPill, body.ai-open #whoami { display: none; } }
+  @media (max-width: 1099px) { body.ai-open .fab { display: none; } }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; } th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .tablewrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+ <div style="width:100%;max-width:780px">
+  <div style="margin:0 0 14px;text-align:center;line-height:1.5">
+    <div style="font-size:16px;color:var(--text)">🚀 Team <b>Orbit &amp; Co</b> · NASA Space Apps Challenge 2026</div>
+    <div class="muted" style="font-size:14px">Challenge: <i>Create Health Monitoring Software for Astronauts on Space Missions</i></div>
+  </div>
+  <div class="login-card">
+    <p class="brand">Astro<span>Guard</span></p>
+    <p class="muted" style="margin:4px 0 18px">Health monitoring for astronauts: assess your own health, get guidance, keep your crew safe.</p>
+    <h2 style="margin:4px 0 8px">1 · Choose your system</h2>
+    <div id="sysChooser"></div>
+    <div id="signinBlock" class="hidden">
+    <h2 style="margin:18px 0 8px">2 · Sign in</h2>
+    <form id="loginForm" class="row2">
+      <input id="code" inputmode="numeric" autocomplete="off" placeholder="Enter your access code" aria-label="Access code">
+      <button class="primary" type="submit" style="white-space:nowrap;padding:8px 18px">Sign in</button>
+    </form>
+    <p id="loginErr" style="color:var(--crit);min-height:1.2em;margin:6px 0 0"></p>
+    <h2 style="margin-top:14px" id="codesTitle">Demo access codes</h2>
+    <div class="codes" id="codes"></div>
+    </div>
+    <div style="font-size:12px;margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line)" class="muted">
+      <p style="margin:0 0 6px;color:var(--text)">⚠ <b>Prototype, not a medical device and not medical advice.</b></p>
+      <p style="margin:0">Crew and health data are synthetic; thresholds are demo values; AI answers can be wrong. Real NASA OSDR data (OSD-575, Inspiration4) is shown as a reference only. Not affiliated with or endorsed by NASA, AEB or CSA. Demo codes are not real security. Built with SI assistance (see SI_DISCLOSURE.md).</p>    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header>
+    <span class="brand">Astro<span>Guard</span></span>
+    <span class="pill" id="nodePill" style="color:var(--text)"></span>
+    <span class="pill" id="envPill"></span>
+    <span class="pill" id="linkPill"></span>
+    <span class="grow"></span>
+    <span class="muted" id="whoami" style="font-size:13px"></span>
+    <button class="sos hidden" id="sosBtn">⚠ EMERGENCY</button>
+    <button id="logoutBtn">Sign out</button>
+  </header>
+  <nav id="nav"></nav>
+  <main>
+    <div id="emergencyArea"></div>
+    <div id="view"></div>
+  </main>
+</div>
+<aside id="aiDrawer" class="drawer hidden" aria-label="AstroGuard AI assistant"></aside>
+<button id="aiFab" class="fab hidden" onclick="document.body.classList.contains('ai-open') ? closeDrawer() : openDrawer()">✨ Ask AstroGuard</button>
+<div id="modalRoot"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtT = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+const fmtD = (ts) => ts ? new Date(ts * 1000).toLocaleDateString([], { month: "short", day: "numeric" }) : "";
+const ago = (ts) => { if (!ts) return "never"; const s = Date.now() / 1000 - ts; return s < 90 ? "live" : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
+const store = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} } };
+
+let TOKEN = store.get("ag_token"), USER = null, G = null, ME = null, VIEW = null, DATA = {};
+const MOODS = ["", "😞", "🙁", "😐", "🙂", "😄"];
+
+async function api(path, body) {
+  const r = await fetch(path, { method: body ? "POST" : "GET", headers: { "X-Session": TOKEN || "", "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { logout(); throw new Error("session expired"); }
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+
+/* ---------------- login ---------------- */
+const DEMO = [["4821", "Ana Ribeiro", "Commander"], ["7316", "Kenji Watanabe", "Pilot"], ["2094", "Leila Haddad", "Mission Specialist · CMO"],
+              ["5583", "Tom Becker", "Mission Specialist · Backup CMO"], ["9001", "Dr. Priya Nair", "Flight Surgeon (ground)"], ["3000", "Flight Director", "Mission Control (ground)"]];
+const GROUND_CODES = ["9001", "3000"];
+let NODE_MODE = "standalone", SYS = new URLSearchParams(location.hash.slice(1)).get("sys");  // nothing chosen yet
+if (!["crew", "ground"].includes(SYS)) SYS = null;
+const otherNodeUrl = (port, sys) => `${location.protocol}//${location.hostname}:${port}/#sys=${sys}`;
+function renderCodes(mode) {
+  NODE_MODE = mode;
+  const card = (id, icon, title, who, desc) => {
+    const on = SYS === id;
+    return `<button type="button" class="sys-card ${on ? "on" : ""}" data-sys="${id}">
+      <div class="sys-ico">${icon}</div><div style="text-align:left"><b>${title}</b>
+      <div class="muted" style="font-size:12px;margin-top:2px">${who}</div><div style="font-size:12px;margin-top:4px">${desc}</div></div></button>`;
+  };
+  $("sysChooser").innerHTML = `
+    <div class="sys-grid">
+      ${card("crew", "🛰", "Spacecraft App", "Astronauts · Crew Medical Officers", "Runs onboard. Personal health, check-ins, AI assistant, emergencies.")}
+      ${card("ground", "🌍", "Ground Station App", "Flight Surgeon · Mission Control", "Runs on Earth. Crew overview, private messages, AI agent monitoring.")}
+    </div>`;
+  $("sysChooser").querySelectorAll(".sys-card").forEach(b => b.onclick = () => {
+    const want = b.dataset.sys;
+    if (mode === "onboard" && want === "ground") { location.href = otherNodeUrl(8001, "ground"); return; }
+    if (mode === "ground" && want === "crew") { location.href = otherNodeUrl(8000, "crew"); return; }
+    SYS = want; renderCodes(mode);
+    setTimeout(() => $("code").focus(), 30);
+  });
+  $("signinBlock").classList.toggle("hidden", !SYS);
+  if (!SYS) return;
+  const list = DEMO.filter(([c]) => SYS === "ground" ? GROUND_CODES.includes(c) : !GROUND_CODES.includes(c));
+  $("codesTitle").textContent = SYS === "ground" ? "Ground station demo access codes" : "Spacecraft crew demo access codes";
+  $("codes").innerHTML = list.map(([c, n, t]) => `<button type="button" data-c="${c}"><b>${n}</b><small>${t}</small><span class="mono">${c}</span></button>`).join("");
+}
+renderCodes("standalone");
+fetch("/api/node").then(r => r.json()).then(n => renderCodes(n.mode)).catch(() => {});
+$("codes").onclick = (e) => { const b = e.target.closest("button"); if (b) { $("code").value = b.dataset.c; doLogin(); } };
+$("loginForm").onsubmit = (e) => { e.preventDefault(); doLogin(); };
+async function doLogin() {
+  $("loginErr").textContent = "";
+  try { const r = await api("/api/login", { code: $("code").value }); TOKEN = r.token; store.set("ag_token", TOKEN); boot(); }
+  catch (e) { $("loginErr").textContent = e.message; }
+}
+function logout() { TOKEN = null; store.set("ag_token", null); location.reload(); }
+$("logoutBtn").onclick = logout;
+
+/* ---------------- boot / nav ---------------- */
+async function boot() {
+  try { G = G || await api("/api/guides"); ME = await api("/api/me"); } catch (e) { return; }
+  USER = ME.user;
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("whoami").textContent = `${USER.name} · ${USER.title}`;
+  $("sosBtn").classList.toggle("hidden", !USER.crew_id);
+  const tabs = [];
+  if (USER.crew_id) tabs.push(["health", "My Health"], ["checkin", "Check-in"], ["body", "Body"], ["routine", "Routine"]);
+  if (!(USER.roles.length === 1 && USER.roles[0] === "astronaut")) tabs.push(["crew", "Crew board"]);
+  if (USER.crew_id) tabs.push(["privacy", "Privacy"]);
+  if (USER.roles.some(r => r === "mission_control" || r === "flight_surgeon")) tabs.push(["ops", "Mission Control ↗"]);
+  $("nav").innerHTML = tabs.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join("");
+  $("nav").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.v === "ops") { location.href = "/ops"; return; } show(b.dataset.v); };
+  vAsk();
+  $("aiFab").classList.remove("hidden");
+  if (store.get("ag_ai_open") === "1") openDrawer();
+  show(store.get("ag_view_" + USER.id) || tabs[0][0]);
+  setInterval(refresh, 2000);
+}
+function show(v) {
+  if (v !== "ask" && ![...$("nav").querySelectorAll("button")].some(b => b.dataset.v === v)) v = $("nav").querySelector("button").dataset.v;
+  if (v === "ops") { store.set("ag_view_" + USER.id, null); location.href = "/ops"; return; }
+  if (v === "ask") { openDrawer(); v = $("nav").querySelector("button").dataset.v; }
+  VIEW = v; store.set("ag_view_" + USER.id, v);
+  $("nav").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("view").innerHTML = `<p class="muted">Loading…</p>`;
+  FORM_RENDERED = false; CHAT_RENDERED = false; refresh(true);
+}
+let busy = false;
+async function refresh(force) {
+  if (busy && !force) return; busy = true;
+  try {
+    ME = await api("/api/me");
+    $("envPill").textContent = `${ME.env.name} · ${ME.env.gravity}`;
+    const nd = ME.node || {}, lk = nd.link;
+    $("nodePill").textContent = { onboard: "🛰 ONBOARD", ground: "🌍 GROUND STATION" }[nd.mode] || "All-in-one demo";
+    if (lk) {
+      const age = nd.mode === "ground" ? lk.last_rx_age_s : null;
+      $("linkPill").innerHTML = lk.blackout
+        ? `<span style="color:var(--crit)">⛔ LINK BLACKOUT · ${lk.queued} stored</span>`
+        : `📡 Earth link ${esc(ME.env.delay_label)} <span class="muted">(demo ${lk.delay_s}s)</span>${lk.queued ? ` · ${lk.queued} in transit` : ""}${age != null ? ` · last contact ${age}s ago` : ""}`;
+      $("linkPill").classList.remove("hidden");
+    } else $("linkPill").classList.add("hidden");
+    renderEmergencies();
+    if (["health", "body", "routine", "privacy", "checkin"].includes(VIEW)) DATA.home = await api("/api/home");
+    if (VIEW === "crew") DATA.team = await api("/api/team");
+    ({ health: vHealth, checkin: vCheckin, body: vBody, routine: vRoutine, crew: vCrew, privacy: vPrivacy })[VIEW]?.();
+    if ($("aiStatus")) $("aiStatus").innerHTML = aiStatusHTML(ME.node?.assistant_online);
+  } catch (e) { console.warn(e); }
+  busy = false;
+}
+
+/* ---------------- shared renderers ---------------- */
+function tierCls(t) { return t === "Flight surgeon" ? "fs" : t === "Crew Medical Officer" ? "cmo" : t === "Self-care" ? "sc" : ""; }
+function tileHTML(i) {
+  const v = i.display ?? "—";
+  return `<div class="tile ${i.status}" data-ind="${i.key}" title="Click for how to measure, why it matters and what to do">
+    <div class="lbl"><span>${esc(i.name)}</span><span class="st ${i.status}">${i.status === "none" ? "no data" : i.status === "crit" ? "act now" : i.status === "warn" ? "watch" : "normal"}</span></div>
+    <div class="val">${esc(typeof v === "number" ? (Number.isInteger(v) ? v : v.toFixed(1)) : v)} <small>${esc(i.unit)}</small></div>
+    <div class="src">${esc(i.source)} · ${ago(i.ts)}</div></div>`;
+}
+function tilesHTML(view) {
+  const order = ["heart_rate", "spo2", "blood_pressure", "blood_glucose", "body_temp", "sleep_hours", "mood", "exercise_min"];
+  let h = order.filter(k => view.indicators[k]).map(k => tileHTML(view.indicators[k])).join("");
+  if (view.mood_private) h += `<div class="tile none"><div class="lbl"><span>Mood</span><span class="st none">private</span></div><div class="val">🔒</div><div class="src">Private between the crew member and flight surgeon</div></div>`;
+  return `<div class="tiles">${h}</div>`;
+}
+function recsHTML(recs) {
+  if (!recs.length) return `<p class="muted">No actions needed. Keep up your routine 👍</p>`;
+  return recs.map(r => `<div class="rec ${r.severity}">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tier ${tierCls(r.tier)}">${esc(r.tier)}</span><b>${esc(r.title)}</b></div>
+    <ul>${r.actions.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>`).join("");
+}
+function alertsHTML(alerts) {
+  if (!alerts?.length) return "";
+  return alerts.map(a => `<div class="alert ${a.severity}"><b>${esc(a.title)}</b> <span class="muted" style="font-size:12px">${fmtT(a.ts)}</span>
+    ${a.root_cause ? `<div class="muted" style="font-size:13px">${esc(a.root_cause)}</div>` : ""}
+    ${a.explanation ? `<div class="expl">${esc(a.explanation).replace(/\[([a-z0-9-]+)\]/g, '<span class="cite">[$1]</span>')}
+      <div class="muted" style="font-size:11px;margin-top:4px">Sources: ${(a.citations || []).map(c => esc(c.source)).join(" · ")}</div></div>` : ""}</div>`).join("");
+}
+function chartsHTML(view, prefix) {
+  const t = view.trends; if (!t || !t.ts?.length) return `<p class="muted">No history yet.</p>`;
+  const defs = [["bp", "Blood pressure (mmHg)", ["systolic", "diastolic"]], ["glucose", "Blood sugar (mg/dL)", ["glucose"]],
+                ["temp", "Body temperature (°C)", ["body_temp"]], ["sleep", "Sleep (h)", ["sleep_hours"]], ["mood", "Mood (1-5)", ["mood"]]];
+  return `<div class="charts">${defs.filter(d => d[2].every(f => t[f])).map(([id, label]) =>
+    `<div class="chartbox"><div class="t"><span>${label}</span><span>14 days</span></div><canvas class="chart" id="${prefix}-${id}"></canvas></div>`).join("")}</div>`;
+}
+const BANDS = { systolic: [90, 135], glucose: [70, 180], body_temp: [35.8, 37.5], sleep_hours: [6, 9], mood: [3, 5] };
+const COLORS = { systolic: "#ff7a90", diastolic: "#ffb3c0", glucose: "#f5b642", body_temp: "#ff9f5a", sleep_hours: "#7c5cff", mood: "#3ccf91" };
+function drawCharts(view, prefix) {
+  const t = view.trends; if (!t || !t.ts) return;
+  const map = { bp: ["systolic", "diastolic"], glucose: ["glucose"], temp: ["body_temp"], sleep: ["sleep_hours"], mood: ["mood"] };
+  for (const [id, fields] of Object.entries(map)) {
+    const c = $(`${prefix}-${id}`); if (!c) continue;
+    const dpr = devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight; c.width = w * dpr; c.height = h * dpr;
+    const ctx = c.getContext("2d"); ctx.scale(dpr, dpr);
+    const all = fields.flatMap(f => t[f].filter(v => v != null)); const band = BANDS[fields[0]];
+    const lo = Math.min(...all, band ? band[0] : Infinity), hi = Math.max(...all, band ? band[1] : -Infinity);
+    const pad = (hi - lo) * 0.15 || 1, mn = lo - pad, mx = hi + pad;
+    const t0 = t.ts[0], t1 = t.ts[t.ts.length - 1] || t0 + 1;
+    const X = (ts) => 4 + ((ts - t0) / ((t1 - t0) || 1)) * (w - 8), Y = (v) => h - 4 - ((v - mn) / (mx - mn)) * (h - 8);
+    if (band) { ctx.fillStyle = "rgba(60,207,145,.08)"; ctx.fillRect(0, Y(band[1]), w, Y(band[0]) - Y(band[1])); }
+    for (const f of fields) {
+      ctx.strokeStyle = COLORS[f]; ctx.fillStyle = COLORS[f]; ctx.lineWidth = 2; ctx.beginPath(); let started = false;
+      t[f].forEach((v, i) => { if (v == null) return; const x = X(t.ts[i]), y = Y(v); started ? ctx.lineTo(x, y) : ctx.moveTo(x, y); started = true; });
+      ctx.stroke();
+      t[f].forEach((v, i) => { if (v == null) return; ctx.beginPath(); ctx.arc(X(t.ts[i]), Y(v), 2.2, 0, 7); ctx.fill(); });
+    }
+  }
+}
+function heroHTML(v, extra = "") {
+  const label = { ok: "Good", warn: "Watch", crit: "Act" }[v.overall] || "—";
+  return `<div class="hero"><div class="ring ${v.overall}">${label}</div><div style="flex:1;min-width:220px">
+    <h3>${esc(v.name)} <span class="muted" style="font-weight:400;font-size:13px">${esc(v.title)}</span></h3>
+    <div><b>${esc(v.duty)}</b></div>
+    ${v.restrictions?.length ? `<div style="margin-top:4px">${v.restrictions.map(r => `<span class="chip" style="border-color:var(--warn);color:var(--warn)">${esc(r)}</span>`).join("")}</div>` : ""}
+    ${extra}</div></div>`;
+}
+
+/* ---------------- real NASA data (OSDR OSD-575, Inspiration4) ---------------- */
+function nasaRefHTML(r, myValue) {
+  if (!r) return "";
+  const ph = r.phases || {}, f = (p) => p ? `${p.min}–${p.max} <span class="muted">(mean ${p.mean})</span>` : "–";
+  const where = myValue != null && ph.pre_flight ? (myValue >= ph.pre_flight.min && myValue <= ph.pre_flight.max
+      ? `<span class="st ok">within crew pre-flight range</span>` : `<span class="st warn">outside crew pre-flight range</span>`) : "";
+  const tl = (r.timeline || []).map(t => `<span class="chip">${t.timepoint}: ${t.mean}</span>`).join("");
+  return `<div class="rec" style="border-left-color:var(--accent2)">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tier" style="background:#22183f;color:#c3a8ff">🛰 Real flight data</span><b>${esc(r.label)}</b>${myValue != null ? ` · you: <b>${myValue}</b> ${esc(r.unit)} ${where}` : ""}</div>
+    <div class="mini" style="grid-template-columns:1fr;font-size:12px;margin-top:6px">
+      <div><span>Before launch (L-92 to L-3)</span><b>${f(ph.pre_flight)} ${esc(r.unit)}</b></div>
+      <div><span>Day after return (R+1)</span><b>${f(ph.return_day)}</b></div>
+      <div><span>Recovery (R+45 to R+194)</span><b>${f(ph.recovery)}</b></div>
+      <div><span>Lab reference range</span><b>${r.lab_range[0] ?? "–"}–${r.lab_range[1] ?? "–"}</b></div></div>
+    <div style="margin-top:4px">${tl}</div>
+    <div class="muted" style="font-size:11px;margin-top:4px">Source: <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.dataset)}</a> · ${r.subjects} civilian crew, 3-day mission. Reference only, not a clinical norm.</div></div>`;
+}
+
+/* ---------------- guide modal ---------------- */
+function openGuide(key, view) {
+  const g = G.indicators[key]; if (!g) return;
+  const cur = view?.indicators?.[key];
+  modal(`<h3>${esc(g.name)} ${cur ? `<span class="st ${cur.status}">${cur.display ?? "—"} ${esc(g.unit)}</span>` : ""}</h3>
+    <div>${g.hazards.map(h => `<span class="chip ${h}">${esc(G.hazards[h])}</span>`).join("")}</div>
+    <h2 style="margin-top:14px">How to measure</h2><ol>${g.how.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+    <h2>Why it matters in space</h2><p>${esc(g.why)}</p>
+    <h2>Normal</h2><p>${esc(g.normal)}</p>
+    <h2>If it looks abnormal</h2>
+    <div class="rec warn"><span class="tier cmo">Watch</span><ul>${g.actions.warn.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>
+    ${g.actions.crit.length ? `<div class="rec crit"><span class="tier fs">Act now</span><ul>${g.actions.crit.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
+    ${G.nasa_indicator_map?.[key] ? `<h2>How a real crew compared (NASA open data)</h2>${nasaRefHTML(G.nasa_reference[G.nasa_indicator_map[key]], typeof cur?.value === "number" ? cur.value : null)}` : ""}
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <button class="primary" id="askThis">✨ Ask AstroGuard about ${cur && !view?.access ? "my reading" : "this"}</button>
+      <span class="muted" style="font-size:12px">Demo thresholds, not clinical limits.</span></div>`);
+  const q = cur && cur.display != null && view === DATA.home?.me
+    ? `My ${g.name.toLowerCase()} is ${cur.display} ${g.unit} (${cur.status === "ok" ? "normal" : cur.status === "warn" ? "needs watching" : "out of range"}). What does that mean for me in space, and what should I do?`
+    : `Explain ${g.name.toLowerCase()} in spaceflight: how to measure it and when it needs attention.`;
+  $("askThis").onclick = () => { $("modalRoot").innerHTML = ""; askAbout(q); };
+}
+function modal(html) {
+  $("modalRoot").innerHTML = `<div class="modal-bg"><div class="modal"><button class="x" aria-label="Close">✕</button>${html}</div></div>`;
+  const bg = $("modalRoot").firstChild;
+  bg.onclick = (e) => { if (e.target === bg || e.target.classList.contains("x")) $("modalRoot").innerHTML = ""; };
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest(".tile[data-ind]"); if (!t) return;
+  const v = t.closest("[data-member]") ? DATA.memberView : DATA.home?.me;
+  openGuide(t.dataset.ind, v);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("modalRoot").innerHTML = ""; });
+
+/* ---------------- views ---------------- */
+function vHealth() {
+  const h = DATA.home, me = h.me, r = h.routine;
+  const due = r.due_now.length ? `<div class="banner warn">⏰ <b>Due now:</b> ${r.due_now.map(esc).join(" · ")} <span class="grow"></span><button data-go="${r.due_now.includes("Morning health check-in") ? "checkin" : "routine"}">Go</button></div>` : "";
+  const notes = h.notes.length ? h.notes.slice(0, 2).map(n => `<div class="rec"><b>${esc(n.from_name)}</b> <span class="muted" style="font-size:12px">${fmtD(n.ts)} ${fmtT(n.ts)}</span><div>${esc(n.text)}</div></div>`).join("") : `<p class="muted">No messages.</p>`;
+  $("view").innerHTML = `${due}
+    <div class="grid g2">
+      <div class="grid">
+        <div class="card">${heroHTML(me, `<div class="muted" style="font-size:13px;margin-top:4px">🔥 ${r.streak}-day check-in streak · Level ${r.level} · ${r.points} pts</div>`)}</div>
+        <div class="card"><h2>My indicators <span style="text-transform:none;letter-spacing:0">· tap any tile for how to measure, why it matters and what to do</span></h2>${tilesHTML(me)}</div>
+        <div class="card"><h2>My trends</h2>${chartsHTML(me, "me")}</div>
+      </div>
+      <div class="grid" style="align-content:start">
+        ${me.alerts?.length ? `<div class="card"><h2>Active alerts</h2>${alertsHTML(me.alerts)}</div>` : ""}
+        <div class="card"><h2>Recommendations</h2>${recsHTML(me.recommendations)}</div>
+        <div class="card"><h2>Messages from your flight surgeon</h2>${notes}</div>
+      </div>
+    </div>`;
+  $("view").querySelectorAll("[data-go]").forEach(b => b.onclick = () => show(b.dataset.go));
+  drawCharts(me, "me");
+}
+
+let FORM_RENDERED = false, MOOD = null;
+function vCheckin() {
+  if (FORM_RENDERED) return; FORM_RENDERED = true; MOOD = null;
+  const I = G.indicators;
+  const guide = (k) => `<details><summary>How to measure · why it matters</summary><ol>${I[k].how.map(x => `<li>${esc(x)}</li>`).join("")}</ol><div class="muted">${esc(I[k].why)}</div><div style="margin-top:4px"><b>Normal:</b> ${esc(I[k].normal)}</div></details>`;
+  $("view").innerHTML = `<div class="card"><h2>Daily health check-in</h2>
+    <p class="muted" style="margin-top:0">Heart rate, oxygen and sleep come from your wearables automatically. Add the measurements below. Open "How to measure" if you're unsure.</p>
+    <form id="ci"><div class="form">
+      <div class="field"><label>Blood pressure (mmHg)</label><div class="row2"><input name="systolic" type="number" placeholder="120" min="50" max="260"> / <input name="diastolic" type="number" placeholder="80" min="30" max="160"></div>${guide("blood_pressure")}</div>
+      <div class="field"><label>Blood sugar (mg/dL)</label><input name="glucose" type="number" placeholder="95" min="20" max="600">${guide("blood_glucose")}</div>
+      <div class="field"><label>Body temperature (°C)</label><input name="body_temp" type="number" step="0.1" placeholder="36.8" min="30" max="43">${guide("body_temp")}</div>
+      <div class="field"><label>Sleep last night (h), if your watch was off</label><input name="sleep_hours" type="number" step="0.1" placeholder="7.0" min="0" max="24">${guide("sleep_hours")}</div>
+      <div class="field"><label>How is your mood? 🔒 private</label><div class="moods" id="moods">${[1, 2, 3, 4, 5].map(m => `<button type="button" data-m="${m}" aria-label="mood ${m}">${MOODS[m]}</button>`).join("")}</div>${guide("mood")}</div>
+      <div class="field"><label>Symptoms or notes (optional)</label><textarea name="symptoms" rows="3" placeholder="e.g. headache, congestion, back pain"></textarea></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="primary" type="submit">Submit check-in (+10 pts)</button><span class="muted" id="ciMsg"></span></div>
+    </form></div>`;
+  $("moods").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; MOOD = +b.dataset.m; $("moods").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); };
+  $("ci").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = Object.fromEntries(new FormData(e.target)); if (MOOD) fd.mood = MOOD;
+    try { DATA.home = await api("/api/checkin", fd); toast("Check-in saved. Here is your assessment."); show("health"); }
+    catch (err) { $("ciMsg").textContent = "⚠ " + err.message; }
+  };
+}
+
+let BODY_SEL = "heart";
+function vBody() {
+  const me = DATA.home.me, s = me.systems;
+  const col = (id) => ({ ok: "#3ccf91", warn: "#f5b642", crit: "#ff5d5d" }[s[id]] || "#5b6680");
+  const part = (id, shape) => shape.replace("<", `<`).replace(/^<(\w+)/, `<$1 class="part ${BODY_SEL === id ? "sel" : ""}" data-sys="${id}" fill="${col(id)}"`);
+  const svg = `<svg class="body" viewBox="0 0 200 420" role="img" aria-label="Clickable body figure">
+    <rect x="58" y="98" width="84" height="134" rx="26" fill="#1a2336"/>
+    ${part("bones", '<rect x="36" y="104" width="18" height="118" rx="9"/>')}${part("bones", '<rect x="146" y="104" width="18" height="118" rx="9"/>')}
+    ${part("bones", '<rect x="66" y="234" width="28" height="160" rx="12"/>')}${part("bones", '<rect x="106" y="234" width="28" height="160" rx="12"/>')}
+    ${part("brain", '<circle cx="100" cy="50" r="34"/>')}
+    ${part("eyes", '<circle cx="87" cy="56" r="6"/>')}${part("eyes", '<circle cx="113" cy="56" r="6"/>')}
+    ${part("immune", '<rect x="88" y="86" width="24" height="14" rx="6"/>')}
+    ${part("lungs", '<ellipse cx="80" cy="140" rx="17" ry="30"/>')}${part("lungs", '<ellipse cx="120" cy="140" rx="17" ry="30"/>')}
+    ${part("heart", '<circle cx="104" cy="150" r="12"/>')}
+    ${part("metabolic", '<ellipse cx="100" cy="202" rx="30" ry="20"/>')}
+  </svg>`;
+  const sys = G.systems[BODY_SEL];
+  const inds = sys.indicators.map(k => me.indicators[k]).filter(Boolean);
+  const recs = me.recommendations.filter(r => sys.indicators.includes(r.indicator));
+  $("view").innerHTML = `<div class="card"><div class="body-wrap"><div>${svg}
+      <p class="muted" style="text-align:center;font-size:12px;margin-bottom:6px">Tap a body part. Color = current status.</p>
+      <div style="text-align:center">${Object.entries(G.systems).map(([id, x]) => `<button class="sysbtn" data-sys="${id}" style="margin:2px;padding:3px 8px;font-size:12px;${id === BODY_SEL ? "border-color:var(--accent)" : ""}"><span class="st ${s[id]}" style="padding:0 4px">●</span> ${esc(x.name)}</button>`).join("")}</div></div>
+    <div><h3>${esc(sys.name)} <span class="st ${s[BODY_SEL]}">${s[BODY_SEL]}</span></h3>
+      <p><b>Function:</b> ${esc(sys.function)}</p><p><b>In spaceflight:</b> ${esc(sys.spaceflight)}</p>
+      ${sys.note ? `<div class="banner info">👁 ${esc(sys.note)}</div>` : ""}
+      ${inds.length ? `<h2>Indicators</h2><div class="tiles">${inds.map(tileHTML).join("")}</div>` : ""}
+      <h2 style="margin-top:14px">What to do</h2>${recsHTML(recs)}
+      ${(() => { const refs = Object.values(G.nasa_reference || {}).filter(r => r && r.system === BODY_SEL);
+        return refs.length ? `<h2 style="margin-top:14px">🛰 Real spaceflight data for this system (NASA OSDR)</h2>${refs.map(r => nasaRefHTML(r, r.analyte === "GLUCOSE" && typeof me.indicators.blood_glucose?.value === "number" ? me.indicators.blood_glucose.value : null)).join("")}` : ""; })()}
+    </div></div></div>`;
+  $("view").querySelectorAll(".part, .sysbtn").forEach(p => p.onclick = () => { BODY_SEL = p.dataset.sys; vBody(); });
+}
+
+function vRoutine() {
+  const r = DATA.home.routine, pct = Math.min(100, ((r.points % 150) / 150) * 100);
+  const icons = { first: "🚀", streak7: "🛰️", bones: "🦴", full: "🏅" };
+  $("view").innerHTML = `<div class="grid g2"><div class="card"><h2>Today's mission routine</h2>
+      ${r.tasks.map(t => `<div class="task ${t.state}"><span class="time">${t.due}</span><div style="flex:1"><b>${esc(t.title)}</b><div class="muted" style="font-size:12px">${esc(t.detail)}</div></div>
+        ${t.state === "done" ? `<span class="st ok">done</span>` : t.id === "checkin" ? `<button data-go="checkin">Start</button>` : `<button data-t="${t.id}">Mark done +${t.points}</button>`}</div>`).join("")}
+    </div><div class="grid" style="align-content:start">
+      <div class="card"><h2>Progress</h2><div style="display:flex;justify-content:space-between"><b>Level ${r.level}</b><span class="muted">${r.points} / ${r.next_level_at} pts</span></div>
+        <div class="xp" style="margin:6px 0 10px"><div style="width:${pct}%"></div></div><div>🔥 <b>${r.streak}-day</b> check-in streak</div></div>
+      <div class="card"><h2>Badges</h2><div class="badges">${r.badges.map(b => `<div class="badge ${b.earned ? "earned" : ""}"><div class="ico">${icons[b.id]}</div><b>${esc(b.name)}</b><div class="muted" style="font-size:11px">${esc(b.desc)}</div></div>`).join("")}</div></div>
+    </div></div>`;
+  $("view").querySelectorAll("[data-t]").forEach(b => b.onclick = async () => { await api("/api/task", { task_id: b.dataset.t }); toast("Nice work! Points added."); refresh(true); });
+  $("view").querySelectorAll("[data-go]").forEach(b => b.onclick = () => show(b.dataset.go));
+}
+
+function vPrivacy() {
+  const h = DATA.home;
+  $("view").innerHTML = `<div class="grid g2"><div class="card"><h2>Who has seen my health data</h2>
+      <p class="muted" style="margin-top:0">Every view of your detailed data by someone else is logged here.</p>
+      <div class="tablewrap"><table><tr><th>When</th><th>Who</th><th>Access</th><th>Reason</th></tr>
+      ${h.audit.length ? h.audit.map(a => `<tr><td>${fmtD(a.ts)} ${fmtT(a.ts)}</td><td>${esc(a.viewer_name)}<div class="muted" style="font-size:11px">${esc(a.viewer_role)}</div></td><td>${esc(a.level)}</td><td>${esc(a.reason)}</td></tr>`).join("") : `<tr><td colspan="4" class="muted">No one has viewed your detailed data yet.</td></tr>`}
+      </table></div></div>
+    <div class="grid" style="align-content:start"><div class="card"><h2>Sharing</h2>
+      <label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="shareVitals" style="width:20px;height:20px" ${h.share_vitals_cmo ? "checked" : ""}> Let the Crew Medical Officers see my vitals routinely</label>
+      <p class="muted" style="font-size:13px;margin:4px 0 12px">Off: CMOs see your vitals only when you have a health warning or in an emergency.</p>
+      <label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="shareMood" style="width:20px;height:20px" ${h.share_mood_cmo ? "checked" : ""}> Share my mood entries with the Crew Medical Officers</label>
+      <p class="muted" style="font-size:13px;margin:4px 0 0">Mood is always private between you and your flight surgeon unless you share it, including in emergencies. Your mood never changes the status others see.</p></div>
+    <div class="card"><h2>Who sees what</h2><div class="tablewrap"><table>
+      <tr><th></th><th>You</th><th>Crew Medical Officers</th><th>Commander</th><th>Flight surgeon</th><th>Mission control</th></tr>
+      <tr><td>Vitals & trends</td><td>✅</td><td>On a health warning, or if you share</td><td>Status</td><td>✅</td><td>Status</td></tr>
+      <tr><td>Mood</td><td>✅</td><td>Only if you share</td><td>❌</td><td>✅</td><td>❌</td></tr>
+      <tr><td>Fit-for-duty & task restrictions</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>In an emergency</td><td colspan="5">The crew sees the patient's vitals (not mood) to treat them, and every view is logged</td></tr>
+    </table></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">Follows NASA practice: medical information stays between you and your flight surgeon (private medical conferences, Privacy Act of 1974), and at least two crew are trained as Crew Medical Officers.</p></div></div></div>`;
+  $("shareMood").onchange = async (e) => { await api("/api/share", { what: "mood", on: e.target.checked }); toast(e.target.checked ? "Mood shared with CMOs" : "Mood is private"); };
+  $("shareVitals").onchange = async (e) => { await api("/api/share", { what: "vitals", on: e.target.checked }); toast(e.target.checked ? "Vitals shared with CMOs" : "CMOs see vitals only on a warning"); };
+}
+
+function vCrew() {
+  const t = DATA.team;
+  const delay = t.simulated_delay ? `<div class="banner info">📡 Ground link: Earth-${esc(ME.env.name)} light-time ${esc(t.simulated_delay)}. Data shown is ${t.data_age_s}s old (demo-compressed). The crew must act before you can respond.</div>` : "";
+  const hab = t.habitat ? `<div class="card"><h2>Habitat</h2><div class="mini" style="font-size:14px">
+      <div><span>CO₂</span><b>${t.habitat.cabin.co2_mmHg.toFixed(1)} mmHg</b></div><div><span>Pressure</span><b>${t.habitat.cabin.pressure_kPa.toFixed(1)} kPa</b></div>
+      <div><span>O₂</span><b>${t.habitat.cabin.o2_pct.toFixed(1)}%</b></div><div><span>Dose rate</span><b>${t.habitat.radiation.dose_rate_uSv_h.toFixed(0)} µSv/h</b></div></div>
+      ${t.cabin_alerts.length ? `<div style="margin-top:10px">${alertsHTML(t.cabin_alerts)}</div>` : `<p class="muted" style="margin:8px 0 0">Habitat nominal.</p>`}</div>` : "";
+  const cards = t.crew.map(m => {
+    const can = m.access !== "status";
+    const mini = can && m.indicators ? `<div class="mini">${["heart_rate", "spo2", "blood_pressure", "sleep_hours"].map(k => m.indicators[k] ? `<div><span>${esc(m.indicators[k].name)}</span><b class="${m.indicators[k].status === "crit" ? "" : ""}" style="color:${{ ok: "var(--text)", warn: "var(--warn)", crit: "var(--crit)" }[m.indicators[k].status] || "var(--muted)"}">${esc(m.indicators[k].display ?? "—")}</b></div>` : "").join("")}</div>` : "";
+    return `<div class="member ${m.overall} ${can ? "clickable" : ""}" data-cid="${m.crew_id}">
+      <div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(m.name)}</b><span class="st ${m.overall}">${{ ok: "good", warn: "watch", crit: "act" }[m.overall]}</span></div>
+      <div class="muted" style="font-size:12px">${esc(m.title)}</div>
+      <div style="margin-top:6px"><b>${esc(m.duty)}</b></div>
+      ${m.restrictions.map(r => `<span class="chip" style="border-color:var(--warn);color:var(--warn)">${esc(r)}</span>`).join("")}
+      ${(m.alerts || []).map(a => `<div style="font-size:12px;color:${a.severity === "critical" ? "var(--crit)" : "var(--warn)"}">⚠ ${esc(a.title)}</div>`).join("")}
+      ${mini}
+      <div class="lock">${can ? `🔓 ${esc(m.access_reason)} · click for details` : `🔒 ${esc(m.access_reason)}`}</div></div>`;
+  }).join("");
+  $("view").innerHTML = `${delay}<div class="grid g2"><div class="card"><h2>Crew status</h2><div class="crew">${cards}</div></div><div>${hab}</div></div>`;
+  $("view").querySelectorAll(".member.clickable").forEach(el => el.onclick = () => openMember(el.dataset.cid));
+}
+function openMember(cid) {
+  const m = DATA.team.crew.find(x => x.crew_id === cid); DATA.memberView = m;
+  const surgeon = USER.roles.includes("flight_surgeon");
+  modal(`<div data-member="1">${heroHTML(m, `<div class="muted" style="font-size:12px;margin-top:4px">🔓 Access: ${esc(m.access_reason)} · this view is logged in ${esc(m.name.split(" ")[0])}'s privacy record</div>`)}
+    <h2 style="margin-top:14px">Indicators</h2>${tilesHTML(m)}
+    ${m.alerts?.length ? `<h2 style="margin-top:14px">Alerts</h2>${alertsHTML(m.alerts)}` : ""}
+    <h2 style="margin-top:14px">Recommendations</h2>${recsHTML(m.recommendations)}
+    <h2 style="margin-top:14px">Trends</h2>${chartsHTML(m, "mm")}
+    ${surgeon ? `<h2 style="margin-top:14px">Private message to ${esc(m.name)}</h2><textarea id="noteTxt" rows="3" placeholder="Guidance for the crew member…"></textarea><div style="margin-top:6px"><button class="primary" id="noteBtn">Send</button></div>` : ""}</div>`);
+  drawCharts(m, "mm");
+  if (surgeon) $("noteBtn").onclick = async () => {
+    const r = await api("/api/note", { to: cid, text: $("noteTxt").value });
+    toast(r.queued ? (r.blackout ? "Link blackout: message stored, will send when the link returns" : `Message sent up the link: arrives onboard in ~${r.arrives_in_s}s`) : "Message sent");
+    $("modalRoot").innerHTML = "";
+  };
+}
+
+/* ---------------- AI assistant ---------------- */
+let CHAT_RENDERED = false;
+const CHAT = [];  // {role, text, meta}
+const TOOL_LABELS = { get_my_health_summary: "your health summary", get_my_trend: "your 14-day trend", get_cabin_environment: "cabin environment",
+  search_health_guidance: "NASA knowledge base", get_measurement_guide: "measurement guide", get_crewmate_status: "crewmate status (your access level)",
+  suggest_emergency_protocol: "emergency protocols", request_cmo_review: "notified Crew Medical Officers",
+  get_spaceflight_reference: "real NASA flight data (OSDR)" };
+function chatSuggestions() {
+  if (USER.crew_id) return ["I have a headache and feel tired. What should I do?", "Why is my blood pressure going up?", "How do I measure blood sugar in microgravity?", "Is the cabin air OK right now?"];
+  if (USER.roles.includes("flight_surgeon")) return ["Which crew member needs my attention first, and why?", "Summarize PLT's last two weeks.", "Is anything in the cabin affecting crew health?"];
+  return ["Is everyone fit for today's spacewalk?", "What is MS1's heart rate?", "Is the habitat nominal?"];
+}
+function openDrawer() { document.body.classList.add("ai-open"); $("aiDrawer").classList.remove("hidden"); store.set("ag_ai_open", "1"); setTimeout(() => $("chatIn")?.focus(), 50); renderChat(); }
+function closeDrawer() { document.body.classList.remove("ai-open"); $("aiDrawer").classList.add("hidden"); store.set("ag_ai_open", null); }
+function askAbout(text) { openDrawer(); sendChat(text); }
+function vAsk() {
+  const online = ME.node?.assistant_online;
+  $("aiDrawer").innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)"><b style="white-space:nowrap">✨ Ask AstroGuard</b><span id="aiStatus">${aiStatusHTML(online)}</span><span class="grow"></span>
+        <button id="chatReset" style="font-size:12px;padding:3px 8px" title="Start a new conversation">New chat</button><button id="chatClose" style="font-size:12px;padding:3px 8px" aria-label="Close assistant">✕</button></div>
+      <div style="padding:8px 14px 0;font-size:12px" class="muted">🤖 <b style="color:var(--text)">AI assistant, not a doctor.</b> Sees only data <b style="color:var(--text)">you</b> may see, cites NASA guidance, and routes decisions to your CMO or flight surgeon. Emergency? Press <b style="color:var(--crit)">⚠ EMERGENCY</b>.
+        <details style="margin-top:4px"><summary style="cursor:pointer;color:var(--accent)">How this AI agent works</summary>
+          <ol style="padding-left:18px;margin:4px 0">
+            <li>Checks your real data with tools that run with <i>your</i> permissions.</li>
+            <li>Looks at the cabin to separate environmental from personal causes.</li>
+            <li>Grounds answers in the NASA knowledge base and cites sources.</li>
+            <li>Red-flag symptoms are caught by fixed code, not the AI.</li>
+            <li>No AI available? Falls back to rule-based guidance.</li>
+          </ol>Demo uses a cloud model as a stand-in for an onboard model (Earth is up to 22 min away).</details></div>
+      <div id="chatLog" style="flex:1;overflow-y:auto;padding:8px 14px"></div>
+      <div id="chatSugg" style="padding:0 12px">${chatSuggestions().map(s => `<button class="sugg" style="margin:3px;font-size:12px;padding:4px 9px;text-align:left">${esc(s)}</button>`).join("")}</div>
+      <form id="chatForm" class="row2" style="padding:10px 14px 14px"><input id="chatIn" placeholder="Ask about your health, a reading, or the cabin…" autocomplete="off"><button class="primary" type="submit">Ask</button></form>`;
+  renderChat();
+  $("chatForm").onsubmit = (e) => { e.preventDefault(); sendChat($("chatIn").value); };
+  $("chatSugg").onclick = (e) => { const b = e.target.closest(".sugg"); if (b) sendChat(b.textContent); };
+  $("chatReset").onclick = async () => { await api("/api/assistant/reset", {}); CHAT.length = 0; renderChat(); };
+  $("chatClose").onclick = closeDrawer;
+}
+function aiStatusHTML(online) {
+  return online ? `<span class="st ok" title="${esc(ME.node?.assistant || "")}">AI online</span>`
+                : `<span class="st warn" title="No AI model available: using rule-based guidance">AI offline · rule-based</span>`;
+}
+function fmtReply(t) {
+  return esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\[([a-z0-9-]+)\]/g, '<span class="cite">[$1]</span>')
+    .replace(/(Self-care|Crew Medical Officer|Flight surgeon)(?=\s*[:)\]])/g, (m) => `<span class="tier ${tierCls(m)}">${m}</span>`).replace(/\n/g, "<br>");
+}
+function renderChat() {
+  const log = $("chatLog"); if (!log) return;
+  log.innerHTML = CHAT.length ? CHAT.map(m => m.role === "user"
+    ? `<div style="text-align:right;margin:8px 0"><span style="display:inline-block;background:#13284a;border:1px solid var(--accent);padding:8px 12px;border-radius:12px 12px 2px 12px;max-width:85%;text-align:left">${esc(m.text)}</span></div>`
+    : m.pending ? `<div class="muted" style="margin:8px 0">🤖 Checking your data and NASA guidance…</div>`
+    : `<div style="margin:8px 0;max-width:92%">
+        ${m.meta?.red_flag || m.meta?.suggested_protocol ? `<div class="banner crit" style="margin-bottom:6px">⚠ This may be an emergency: <b>${esc(G.protocols[m.meta.suggested_protocol || m.meta.red_flag].title)}</b>
+          ${USER.crew_id ? `<span class="grow"></span><button class="sos" data-proto="${m.meta.suggested_protocol || m.meta.red_flag}">Start emergency</button>` : ""}</div>` : ""}
+        ${m.meta?.self_harm ? `<div class="banner warn" style="margin-bottom:6px"><span>💙 You don't have to handle this alone. You can request a private conference with your flight surgeon or psychologist right now, and it stays private.</span></div>` : ""}
+        <div style="background:var(--panel2);border:1px solid var(--line);padding:10px 12px;border-radius:12px 12px 12px 2px">${fmtReply(m.text)}</div>
+        <div class="muted" style="font-size:11px;margin-top:4px">${m.meta?.mode === "ai" ? "🤖 AI-generated" : "📘 Rule-based (AI offline)"}${m.meta?.tools_used?.length ? " · checked: " + [...new Set(m.meta.tools_used)].map(t => TOOL_LABELS[t] || t).join(", ") : ""}${m.meta?.citations?.length ? " · sources: " + [...new Map(m.meta.citations.map(c => [c.id, c])).values()].map(c => `<span class="cite" title="${esc(c.source)}">${esc(c.id)}</span>`).join(" ") : ""}</div>
+        ${m.meta?.notice ? `<div class="muted" style="font-size:11px">${esc(m.meta.notice)}</div>` : ""}</div>`).join("")
+    : `<p class="muted">Ask a question, or tap a suggestion below.</p>`;
+  log.scrollTop = log.scrollHeight;
+  log.querySelectorAll("[data-proto]").forEach(b => b.onclick = () => openSOS(b.dataset.proto));
+}
+async function sendChat(text) {
+  text = (text || "").trim(); if (!text) return;
+  $("chatIn").value = "";
+  CHAT.push({ role: "user", text }); const pending = { role: "ai", pending: true }; CHAT.push(pending); renderChat();
+  const context = { view: VIEW, body_system: VIEW === "body" ? BODY_SEL : undefined };
+  try { const r = await api("/api/assistant", { text, context }); Object.assign(pending, { pending: false, text: r.reply, meta: r }); }
+  catch (e) { Object.assign(pending, { pending: false, text: "Sorry, I couldn't answer: " + e.message, meta: {} }); }
+  renderChat();
+}
+
+/* ---------------- emergency ---------------- */
+$("sosBtn").onclick = () => openSOS();
+function openSOS(preselect) {
+  const crew = Object.entries(G.crew);
+  modal(`<h3 style="color:var(--crit)">⚠ Declare a medical emergency</h3>
+    <p class="muted">This gives the crew and flight surgeon full access to the patient's vitals and opens a step-by-step protocol.</p>
+    <h2>Who needs help?</h2><select id="ePatient">${crew.map(([id, c]) => `<option value="${id}" ${id === USER.crew_id ? "selected" : ""}>${esc(c.name)}${id === USER.crew_id ? " (me)" : ""}</option>`).join("")}</select>
+    <h2 style="margin-top:12px">What is happening?</h2>
+    <div class="grid" style="grid-template-columns:1fr 1fr">${Object.entries(G.protocols).map(([k, p]) => `<button class="sos" data-p="${k}" style="padding:14px;${preselect && preselect !== k ? "opacity:.55" : ""}">${esc(p.title)}</button>`).join("")}</div>`);
+  $("modalRoot").querySelectorAll("[data-p]").forEach(b => b.onclick = async () => {
+    await api("/api/emergency", { patient: $("ePatient").value, protocol: b.dataset.p });
+    $("modalRoot").innerHTML = ""; refresh(true);
+  });
+}
+function renderEmergencies() {
+  const list = ME.emergencies || [];
+  if (!list.length) { $("emergencyArea").innerHTML = ""; return; }
+  const canAct = !!USER.crew_id || USER.roles.includes("flight_surgeon");
+  $("emergencyArea").innerHTML = list.map(e => {
+    const pv = e.patient_view, I = pv.indicators || {};
+    DATA.memberView = pv;
+    const vit = I.heart_rate ? `<div class="tiles" data-member="1" style="margin:8px 0">${["heart_rate", "spo2", "blood_pressure", "body_temp"].map(k => I[k] && tileHTML(I[k])).join("")}</div>`
+                             : `<p class="muted">Patient status: ${esc(pv.duty)}</p>`;
+    const steps = e.protocol_detail.steps.map((s, i) => `<label class="step ${e.steps_done.includes(i) ? "done" : ""}"><input type="checkbox" data-e="${e.id}" data-i="${i}" ${e.steps_done.includes(i) ? "checked" : ""} ${canAct ? "" : "disabled"}><span><b>${i + 1}.</b> ${esc(s)}</span></label>`).join("");
+    return `<div class="emerg"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h3 style="margin:0">⚠ EMERGENCY: ${esc(e.protocol_detail.title)}</h3><span class="grow"></span>
+      <span class="muted">Patient: <b style="color:var(--text)">${esc(pv.name)}</b> · started ${fmtT(e.ts)} by ${esc(e.started_by)}</span>
+      ${canAct ? `<button data-resolve="${e.id}">Mark resolved</button>` : ""}</div>
+      <div class="banner crit" style="margin:10px 0">📡 Flight surgeon link delay: <b>${esc(ME.env.delay_label)}</b>. ${ME.env.delay_s > 60 ? "Do not wait for the ground. Follow the steps now." : "The flight surgeon is being notified."}</div>
+      <div class="grid g2"><div>${steps}</div><div><h2>Patient vitals (live)</h2>${vit}
+        <h2 style="margin-top:12px">📨 Situation report to the flight surgeon</h2>
+        ${e.briefing ? `<div class="expl" style="white-space:pre-wrap;font-size:13px">${esc(e.briefing)}</div><div class="muted" style="font-size:11px;margin-top:4px">Written by ${esc(e.briefing_by)} · ${ME.node?.mode === "ground" ? "received over the delayed link" : "sent down the delayed link"}</div>`
+                     : `<p class="muted" style="font-size:13px">🤖 Writing an SBAR report so one delayed message carries everything…</p>`}</div></div></div>`;
+  }).join("");
+  $("emergencyArea").querySelectorAll("input[data-e]").forEach(cb => cb.onchange = async () => {
+    const e = list.find(x => x.id == cb.dataset.e); const set = new Set(e.steps_done); cb.checked ? set.add(+cb.dataset.i) : set.delete(+cb.dataset.i);
+    await api("/api/emergency/update", { id: e.id, steps_done: [...set] }); refresh(true);
+  });
+  $("emergencyArea").querySelectorAll("[data-resolve]").forEach(b => b.onclick = async () => { await api("/api/emergency/update", { id: b.dataset.resolve, resolve: true }); refresh(true); });
+}
+
+/* demo deep links: /#code=4821&view=body (handy for recording the demo) */
+(async () => {
+  const hp = new URLSearchParams(location.hash.slice(1));
+  if (hp.get("view") && hp.get("code")) store.set("ag_view_" + (DEMO.find(d => d[0] === hp.get("code")) ? ({ "4821": "CDR", "7316": "PLT", "2094": "MS1", "5583": "MS2", "9001": "SURG", "3000": "MCC" })[hp.get("code")] : ""), hp.get("view"));
+  if (hp.get("code")) {
+    try { const r = await api("/api/login", { code: hp.get("code") }); TOKEN = r.token; store.set("ag_token", TOKEN); } catch (e) {}
+    history.replaceState(null, "", "/");
+  }
+  if (TOKEN) boot();
+})();
+</script>
+</body>
+</html>

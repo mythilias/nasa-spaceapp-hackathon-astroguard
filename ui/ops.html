@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="generator" content="Developed with assistance from Claude Code (Anthropic SI); see SI_DISCLOSURE.md">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AstroGuard Mission Health</title>
+<style>
+  :root {
+    --bg: #0b0f17; --panel: #121826; --panel2: #182033; --line: #253047;
+    --text: #e6ebf5; --muted: #8a97b1; --accent: #5aa9ff;
+    --ok: #3ccf91; --warn: #f5b642; --crit: #ff5d5d; --down: #9b6bff;
+    --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: .5px; }
+  header h1 span { color: var(--accent); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+  .grow { flex: 1; }
+  button { font: inherit; font-size: 12px; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.danger:hover { border-color: var(--crit); color: var(--crit); }
+  main { display: grid; grid-template-columns: minmax(300px, 1.05fr) minmax(340px, 1.25fr) minmax(320px, 1fr); gap: 14px; padding: 14px; }
+  @media (max-width: 1200px) { main { grid-template-columns: 1fr 1fr; } .col3 { grid-column: span 2; } }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; padding: 10px 16px; } .col3 { grid-column: auto; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; min-width: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  h2 .count { color: var(--text); }
+  .crew { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .card.warning { border-color: var(--warn); } .card.critical { border-color: var(--crit); box-shadow: 0 0 0 1px var(--crit) inset; }
+  .card .who { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 6px; }
+  .card .who small { color: var(--muted); font-weight: 400; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-family: var(--mono); font-size: 12px; }
+  .metrics div { display: flex; justify-content: space-between; } .metrics span { color: var(--muted); }
+  .bad { color: var(--crit) !important; } .meh { color: var(--warn) !important; }
+  canvas.spark { width: 100%; height: 34px; display: block; margin-top: 6px; }
+  .env { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .big { font-family: var(--mono); font-size: 20px; }
+  .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  .scen { display: flex; flex-wrap: wrap; gap: 6px; }
+  .scen .on { border-color: var(--warn); color: var(--warn); }
+  .alert { border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--panel2); }
+  .alert.critical { border-left-color: var(--crit); }
+  .alert.resolved { opacity: .55; border-left-color: var(--ok); }
+  .alert .top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .alert .title { font-weight: 600; font-size: 15px; }
+  .sev { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; }
+  .sev.warning { background: #3a2c0c; color: var(--warn); } .sev.critical { background: #3d1414; color: var(--crit); } .sev.resolved { background: #0f3324; color: var(--ok); }
+  .alert .rc { color: var(--muted); margin: 4px 0 6px; }
+  .alert details { margin-top: 6px; } .alert summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+  .alert ul { margin: 4px 0; padding-left: 18px; }
+  .expl { margin-top: 8px; padding: 8px 10px; background: #0e1422; border-radius: 6px; border: 1px dashed var(--line); }
+  .expl .by { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .cite { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .tag { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; }
+  td.num { font-family: var(--mono); text-align: right; } th.num { text-align: right; }
+  .st { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+  .st.HEALTHY { background: #0f3324; color: var(--ok); } .st.DEGRADED { background: #3a2c0c; color: var(--warn); }
+  .st.DOWN { background: #3d1414; color: var(--crit); } .st.RESTARTING, .st.STARTING { background: #2a1d4a; color: var(--down); }
+  .tablewrap { overflow-x: auto; }
+  .wf-row { display: grid; grid-template-columns: 90px 1fr 60px; gap: 8px; align-items: center; font-size: 12px; margin: 3px 0; }
+  .wf-track { position: relative; height: 12px; background: #0e1422; border-radius: 3px; }
+  .wf-bar { position: absolute; top: 0; height: 12px; border-radius: 3px; background: var(--accent); min-width: 3px; }
+  .wf-bar.hit { background: var(--warn); } .wf-bar.err { background: var(--crit); }
+  .log { font-family: var(--mono); font-size: 11px; max-height: 260px; overflow-y: auto; }
+  .log div { padding: 2px 0; border-bottom: 1px solid #1a2233; }
+  .log .alert-l { color: var(--crit); } .log .warn { color: var(--warn); } .log .error { color: var(--crit); }
+  .empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+  .spans { max-height: 180px; overflow-y: auto; font-family: var(--mono); font-size: 11px; }
+  .spans div { padding: 2px 0; color: var(--muted); } .spans b { color: var(--warn); font-weight: 400; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Astro<span>Guard</span></h1>
+  <span class="pill"><span class="dot" id="liveDot"></span><span id="clock">connecting…</span></span>
+  <span class="pill" id="explainerPill">explainer: …</span>
+  <span class="pill">Mission Control · agent observability</span>
+  <span class="grow"></span>
+  <span class="tag" id="who"></span>
+  <a href="/"><button>← Crew board</button></a>
+  <button id="pauseBtn">Pause stream</button>
+</header>
+
+<main>
+  <div>
+    <section>
+      <h2>Crew vitals</h2>
+      <div class="crew" id="crew"></div>
+    </section>
+    <section>
+      <h2>Habitat</h2>
+      <div class="env" id="env"></div>
+    </section>
+    <section>
+      <h2>Mission environment</h2>
+      <select id="envSel" style="width:100%;padding:6px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px"></select>
+      <p class="tag" id="envInfo" style="margin:6px 0 0"></p>
+      <div id="linkBox" style="display:none;margin-top:10px">
+        <h2 style="margin:8px 0 6px">Deep-space link (store and forward)</h2>
+        <p class="tag" id="linkInfo" style="margin:0 0 8px"></p>
+        <button id="blackoutBtn" class="danger">Simulate solar conjunction blackout</button>
+        <p class="tag" style="margin:6px 0 0">Commands from the ground travel up the delayed link; the spacecraft keeps running on its own.</p>
+      </div>
+    </section>
+    <section id="ctrlSection">
+      <h2>Inject scenario (demo)</h2>
+      <div class="scen" id="scen"></div>
+      <p class="tag" id="activeScen" style="margin:8px 0 0"></p>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Coordinator alerts <span class="count" id="alertCount"></span></h2>
+      <div id="alerts"></div>
+    </section>
+  </div>
+
+  <div class="col3">
+    <section>
+      <h2>Agent health</h2>
+      <div class="tablewrap"><table id="agents"></table></div>
+      <p class="tag" style="margin:8px 0 0">The supervisor marks an agent DOWN after 3 s without a heartbeat and restarts it 5 s later.</p>
+    </section>
+    <section>
+      <h2>Latest trace <span class="tag" id="traceId"></span></h2>
+      <div id="waterfall"></div>
+      <h2 style="margin-top:12px">Span log</h2>
+      <div class="spans" id="spans"></div>
+    </section>
+    <section>
+      <h2>System events</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtT = (ts) => new Date(ts * 1000).toLocaleTimeString();
+let TOKEN = null;
+try { TOKEN = sessionStorage.getItem("ag_token"); } catch (e) {}
+if (!TOKEN) location.href = "/";
+const H = () => ({ "X-Session": TOKEN, "Content-Type": "application/json" });
+const post = (url) => fetch(url, { method: "POST", headers: H() }).then(() => poll());
+
+function cls(v, warn, crit, low = false) {
+  if (low) return v < crit ? "bad" : v < warn ? "meh" : "";
+  return v > crit ? "bad" : v > warn ? "meh" : "";
+}
+
+function spark(canvas, data, color, lo, hi) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w) return;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr);
+  if (!data.length) return;
+  const min = Math.min(lo, ...data), max = Math.max(hi, ...data);
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = (i / Math.max(1, data.length - 1)) * w;
+    const y = h - 2 - ((v - min) / (max - min || 1)) * (h - 4);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function renderCrew(s) {
+  const f = s.frame; if (!f) return;
+  if (!f.crew) {
+    $("crew").innerHTML = `<div class="empty" style="grid-column:1/-1">🔒 Individual crew vitals are restricted to the flight surgeon and crew medical officer (need-to-know). Mission Control sees operational status on the <a href="/" style="color:var(--accent)">Crew board</a>.</div>`;
+  }
+  const sevByCrew = {};
+  s.alerts.filter(a => a.state === "active").forEach(a => a.crew.forEach(c => {
+    if (sevByCrew[c] !== "critical") sevByCrew[c] = a.severity;
+  }));
+  if (f.crew) $("crew").innerHTML = Object.entries(f.crew).map(([cid, v]) => `
+    <div class="card ${sevByCrew[cid] || ""}">
+      <div class="who">${cid} <small>${esc(s.crew_names[cid])}</small></div>
+      <div class="metrics">
+        <div><span>HR</span><b class="${cls(v.heart_rate, 110, 140)}">${v.heart_rate.toFixed(0)}</b></div>
+        <div><span>SpO₂</span><b class="${cls(v.spo2, 94, 90, true)}">${v.spo2.toFixed(1)}%</b></div>
+        <div><span>Resp</span><b class="${cls(v.resp_rate, 20, 26)}">${v.resp_rate.toFixed(0)}</b></div>
+        <div><span>HRV</span><b class="${cls(v.hrv, 35, 25, true)}">${v.hrv.toFixed(0)}</b></div>
+        <div><span>BP</span><b class="${cls(v.systolic_bp, 135, 150)}">${v.systolic_bp.toFixed(0)}</b></div>
+        <div><span>Sleep</span><b class="${cls(v.sleep_hours, 6, 5, true)}">${v.sleep_hours.toFixed(1)}h</b></div>
+      </div>
+      <canvas class="spark" id="sp-${cid}"></canvas>
+    </div>`).join("");
+  if (f.crew) Object.keys(f.crew).forEach(cid => {
+    spark($("sp-" + cid), s.series.crew[cid].heart_rate.slice(-90), "#ff7a90", 50, 100);
+  });
+
+  const c = f.cabin, r = f.radiation;
+  $("env").innerHTML = `
+    <div class="card"><div class="label">Cabin CO₂</div><div class="big ${cls(c.co2_mmHg, 4, 6)}">${c.co2_mmHg.toFixed(2)} <small>mmHg</small></div><canvas class="spark" id="sp-co2"></canvas></div>
+    <div class="card"><div class="label">Pressure</div><div class="big ${cls(c.pressure_kPa, 97, 90, true)}">${c.pressure_kPa.toFixed(1)} <small>kPa</small></div><canvas class="spark" id="sp-p"></canvas></div>
+    <div class="card"><div class="label">Dose rate</div><div class="big ${cls(r.dose_rate_uSv_h, 45, 300)}">${r.dose_rate_uSv_h.toFixed(0)} <small>µSv/h</small></div><canvas class="spark" id="sp-rad"></canvas></div>
+    <div class="card"><div class="label">Mission dose · O₂ · Temp</div><div class="big">${r.mission_dose_mSv.toFixed(1)} <small>mSv</small></div>
+      <div class="tag">O₂ ${c.o2_pct.toFixed(1)}% · ${c.temp_c.toFixed(1)}°C · RH ${c.humidity_pct.toFixed(0)}%</div></div>`;
+  spark($("sp-co2"), s.series.cabin.co2_mmHg.slice(-90), "#f5b642", 2, 5);
+  spark($("sp-p"), s.series.cabin.pressure_kPa.slice(-90), "#5aa9ff", 99, 102);
+  spark($("sp-rad"), s.series.radiation.slice(-90), "#9b6bff", 10, 30);
+}
+
+let scenRendered = false;
+function renderScenarios(s) {
+  if (!scenRendered) {
+    $("scen").innerHTML = Object.entries(s.scenarios).map(([k, d]) =>
+      `<button data-s="${k}" title="${esc(d)}">${k.replace(/_/g, " ")}</button>`).join("") +
+      `<button class="danger" data-s="clear">clear all</button>`;
+    $("scen").onclick = (e) => { const k = e.target.dataset.s; if (k) post(`/api/scenario?name=${k}`); };
+    scenRendered = true;
+  }
+  const active = new Set(s.active_scenarios.map(a => a.name));
+  $("scen").querySelectorAll("button[data-s]").forEach(b => b.classList.toggle("on", active.has(b.dataset.s)));
+  $("activeScen").textContent = s.active_scenarios.length
+    ? "Active: " + s.active_scenarios.map(a => `${a.name}${a.target ? " → " + a.target : ""} (${Math.round(a.progress * 100)}%)`).join(", ")
+    : "Nominal: no scenario injected";
+}
+
+const openDetails = new Set();
+function renderAlerts(s) {
+  const active = s.alerts.filter(a => a.state === "active").length;
+  $("alertCount").textContent = `${active} active · ${s.alerts.length} total`;
+  if (!s.alerts.length) { $("alerts").innerHTML = `<div class="empty">All systems nominal. Inject a scenario to see the agents correlate signals.</div>`; return; }
+  $("alerts").innerHTML = s.alerts.map(a => {
+    const st = a.state === "resolved" ? "resolved" : a.severity;
+    const expl = a.explanation
+      ? `<div class="expl">${esc(a.explanation).replace(/\[([a-z0-9-]+)\]/g, '<span class="cite">[$1]</span>')}
+           <div class="by">Explained by ${esc(a.explained_by)} · sources: ${a.citations.map(c => `<span class="cite" title="${esc(c.source)}">${esc(c.id)}</span> ${esc(c.title)}`).join(" · ")}</div></div>`
+      : `<div class="expl"><span class="tag">Retrieving guidance…</span></div>`;
+    return `<div class="alert ${st}">
+      <div class="top"><span class="sev ${st}">${st}</span><span class="title">${esc(a.title)}</span>
+        <span class="tag">${fmtT(a.ts)} · agents: ${a.agents.join(", ")}</span></div>
+      <div class="rc">${esc(a.root_cause)}</div>
+      <div><b style="font-size:12px">Recommended actions</b><ul>${a.actions.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      ${expl}
+      <details data-id="${a.id}" ${openDetails.has(a.id) ? "open" : ""}><summary>Evidence (${a.evidence.length} findings)</summary>
+        <ul>${a.evidence.map(e => `<li><span class="tag">[${e.agent}]</span> ${esc(e.message)} <span class="tag">trace ${e.trace_id}</span></li>`).join("")}</ul>
+      </details>
+    </div>`;
+  }).join("");
+  $("alerts").querySelectorAll("details").forEach(d => d.ontoggle = () => d.open ? openDetails.add(d.dataset.id) : openDetails.delete(d.dataset.id));
+}
+
+function renderAgents(s) {
+  $("agents").innerHTML = `<tr><th>Agent</th><th>Status</th><th class="num">Frames</th><th class="num">Findings</th><th class="num">p50 ms</th><th class="num">Queue</th><th class="num">Err</th><th class="num">Restarts</th><th></th></tr>` +
+    s.agents.map(a => `<tr title="${esc(a.description)}">
+      <td><b>${a.name}</b><div class="tag">${esc(a.domain)}</div></td>
+      <td><span class="st ${a.status}">${a.status}</span></td>
+      <td class="num">${a.processed}</td><td class="num">${a.findings}</td>
+      <td class="num">${a.latency_ms_p50 ?? "–"}</td><td class="num">${a.queue_depth}</td>
+      <td class="num">${a.errors}</td><td class="num">${a.restarts}</td>
+      <td>${a.name === "coordinator" || !window.IS_MCC ? "" : `<button class="danger" data-a="${a.name}" data-k="crash">crash</button> <button data-a="${a.name}" data-k="slow">slow</button>`}</td>
+    </tr>`).join("");
+}
+$("agents").onclick = (e) => { const b = e.target.closest("button[data-a]"); if (b) post(`/api/chaos?agent=${b.dataset.a}&kind=${b.dataset.k}`); };
+
+function renderTrace(s) {
+  const t = s.trace;
+  if (!t) { $("waterfall").innerHTML = `<div class="empty">Waiting for a complete trace…</div>`; return; }
+  $("traceId").textContent = `trace ${t.trace_id} · tick ${t.spans[0].tick}`;
+  const t0 = Math.min(...t.spans.map(x => x.start));
+  const t1 = Math.max(...t.spans.map(x => x.start + x.duration_ms / 1000));
+  const span = Math.max(0.002, t1 - t0);
+  $("waterfall").innerHTML = t.spans.sort((a, b) => a.agent.localeCompare(b.agent)).map(x => {
+    const left = ((x.start - t0) / span) * 100, width = Math.max(1.5, (x.duration_ms / 1000 / span) * 100);
+    return `<div class="wf-row"><span>${x.agent}</span>
+      <div class="wf-track"><div class="wf-bar ${!x.ok ? "err" : x.findings.length ? "hit" : ""}" style="left:${left}%;width:${Math.min(width, 100 - left)}%"></div></div>
+      <span class="tag">${x.duration_ms} ms</span></div>`;
+  }).join("") + `<div class="tag" style="margin-top:4px">Amber = agent produced findings for this frame</div>`;
+  $("spans").innerHTML = s.recent_spans.map(x =>
+    `<div>${fmtT(x.start)} ${x.trace_id} <span style="color:var(--text)">${x.agent}</span> ${x.duration_ms}ms ${x.findings.length ? "<b>" + esc(x.findings.join("; ")) + "</b>" : "ok"}</div>`).join("");
+}
+
+function renderLog(s) {
+  $("log").innerHTML = s.events.map(e => `<div class="${e.level === "alert" ? "alert-l" : e.level}">${fmtT(e.ts)} [${e.source}] ${esc(e.message)}</div>`).join("");
+}
+
+let failures = 0;
+async function poll() {
+  try {
+    const r = await fetch("/api/state", { headers: H() });
+    if (r.status === 401 || r.status === 403) { location.href = "/"; return; }
+    const s = await r.json();
+    failures = 0;
+    $("who").textContent = `${s.viewer.name} · ${s.viewer.title}`;
+    const isMcc = s.viewer.roles.includes("mission_control");
+    $("ctrlSection").style.display = isMcc ? "" : "none";
+    window.IS_MCC = isMcc;
+    $("envSel").innerHTML = Object.entries(s.environments).map(([k, n]) => `<option value="${k}" ${k === s.env.key ? "selected" : ""}>${esc(n)}</option>`).join("");
+    $("envInfo").textContent = `${s.env.gravity} · Earth link delay ${s.env.delay_label}`;
+    const lk = s.node && s.node.link;
+    $("linkBox").style.display = lk && isMcc ? "" : "none";
+    if (lk) {
+      window.BLACKOUT = lk.blackout;
+      $("linkInfo").innerHTML = lk.blackout
+        ? `<span style="color:var(--crit)">⛔ BLACKOUT: ${lk.queued} message(s) stored on the ground side</span>`
+        : `Demo delay ${lk.delay_s}s one way · ${lk.queued} in transit · last downlink ${lk.last_rx_age_s ?? "–"}s ago`;
+      $("blackoutBtn").textContent = lk.blackout ? "Restore link" : "Simulate solar conjunction blackout";
+    }
+    $("liveDot").style.background = s.paused ? "var(--warn)" : "var(--ok)";
+    $("clock").textContent = `${s.paused ? "PAUSED" : "LIVE"} · tick ${s.frame?.tick ?? 0} · up ${s.uptime_s}s`;
+    $("explainerPill").textContent = `explainer: ${s.explainer.mode} · KB ${s.explainer.kb_passages} passages`;
+    $("pauseBtn").textContent = s.paused ? "Resume stream" : "Pause stream";
+    renderCrew(s); renderScenarios(s); renderAlerts(s); renderAgents(s); renderTrace(s); renderLog(s);
+  } catch (e) {
+    failures++;
+    $("liveDot").style.background = "var(--crit)";
+    $("clock").textContent = "connection lost, retrying…";
+  }
+}
+$("pauseBtn").onclick = () => post("/api/pause");
+$("envSel").onchange = (e) => post(`/api/environment?env=${e.target.value}`);
+$("blackoutBtn").onclick = () => fetch("/api/link/control", { method: "POST", headers: H(), body: JSON.stringify({ blackout: !window.BLACKOUT }) }).then(() => poll());
+setInterval(poll, 1000); poll();
+</script>
+</body>
+</html>
