@@ -1,0 +1,16 @@
+# Render Blueprint: public all-in-one demo for judges (free tier).
+# The AI assistant is deliberately DISABLED here (no API key on a public site): it runs in
+# rule-based mode. The two-node mission and live AI are shown in the demo video.
+services:
+  - type: web
+    name: astroguard
+    runtime: python
+    plan: free
+    buildCommand: echo "AstroGuard core uses only the Python standard library"
+    startCommand: python run_demo.py --reset
+    healthCheckPath: /api/node
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: HMS_DISABLE_LLM
+        value: "1"
