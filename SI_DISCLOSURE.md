@@ -19,4 +19,6 @@
 - Directing and reviewing the SI-generated code
 - Testing every feature
 - Selecting NASA resources and datasets
-- Preparing the demo
+- Creating the GitHub project and publishing it publicly
+- Hosting the live app on Render
+- Preparing the demo and submission
