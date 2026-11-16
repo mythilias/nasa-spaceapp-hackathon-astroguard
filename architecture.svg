@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1200" height="720" rx="16" fill="#ffffff"/>
+  <text x="600" y="44" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">AstroGuard architecture</text>
+  <text x="600" y="70" text-anchor="middle" font-size="14" fill="#64748b">Onboard-first health monitoring: the spacecraft app works on its own; the ground app is a delayed copy</text>
+
+  <!-- Crew devices -->
+  <rect x="30" y="170" width="190" height="270" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="125" y="200" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Crew devices</text>
+  <text x="125" y="232" text-anchor="middle" font-size="13" fill="#334155">Smart shirt</text>
+  <text x="125" y="252" text-anchor="middle" font-size="11" fill="#64748b">(Astroskin-type)</text>
+  <text x="125" y="282" text-anchor="middle" font-size="13" fill="#334155">Fitness band</text>
+  <text x="125" y="302" text-anchor="middle" font-size="11" fill="#64748b">(Fitbit-type, batch)</text>
+  <text x="125" y="332" text-anchor="middle" font-size="13" fill="#334155">Glucometer</text>
+  <text x="125" y="360" text-anchor="middle" font-size="13" fill="#334155">BP cuff · thermometer</text>
+  <text x="125" y="400" text-anchor="middle" font-size="11" fill="#64748b">live or batch readings</text>
+
+  <!-- Spacecraft app -->
+  <rect x="270" y="95" width="440" height="500" rx="16" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="490" y="124" text-anchor="middle" font-size="18" font-weight="700" fill="#1d4ed8">SPACECRAFT APP (onboard)</text>
+
+  <rect x="290" y="140" width="400" height="58" rx="10" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="490" y="164" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Crew web app</text>
+  <text x="490" y="185" text-anchor="middle" font-size="12" fill="#475569">My Health · check-in · body map · routine · emergency</text>
+
+  <rect x="290" y="210" width="400" height="58" rx="10" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="490" y="234" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">REST API + access control</text>
+  <text x="490" y="255" text-anchor="middle" font-size="12" fill="#475569">login · roles · need-to-know · audit log · device ingestion</text>
+
+  <rect x="290" y="280" width="195" height="120" rx="10" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="387" y="304" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Monitoring agents</text>
+  <text x="387" y="326" text-anchor="middle" font-size="12" fill="#475569">Cardio · Respiratory · Sleep</text>
+  <text x="387" y="344" text-anchor="middle" font-size="12" fill="#475569">Radiation · Environment</text>
+  <text x="387" y="368" text-anchor="middle" font-size="12" fill="#475569">→ Coordinator (root cause)</text>
+  <text x="387" y="386" text-anchor="middle" font-size="12" fill="#475569">+ self-healing Supervisor</text>
+
+  <rect x="495" y="280" width="195" height="120" rx="10" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="592" y="304" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">AstroGuard AI assistant</text>
+  <text x="592" y="326" text-anchor="middle" font-size="12" fill="#475569">Claude API (optional)</text>
+  <text x="592" y="344" text-anchor="middle" font-size="12" fill="#475569">rule-based fallback</text>
+  <text x="592" y="368" text-anchor="middle" font-size="12" fill="#475569">NASA knowledge base</text>
+  <text x="592" y="386" text-anchor="middle" font-size="12" fill="#475569">(search + citations)</text>
+
+  <rect x="290" y="412" width="400" height="58" rx="10" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="490" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Health assessment</text>
+  <text x="490" y="457" text-anchor="middle" font-size="12" fill="#475569">status · fit-for-duty · tiered recommendations · trends · alerts</text>
+
+  <rect x="290" y="482" width="400" height="95" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="490" y="510" text-anchor="middle" font-size="15" font-weight="700" fill="#1e3a8a">onboard.db (SQLite): master copy</text>
+  <text x="490" y="533" text-anchor="middle" font-size="12" fill="#334155">check-ins · device readings · alerts · emergencies · audit log</text>
+  <text x="490" y="556" text-anchor="middle" font-size="12" fill="#334155">+ real NASA OSDR OSD-575 data (Inspiration4 crew)</text>
+
+  <!-- Space link -->
+  <rect x="728" y="250" width="134" height="150" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-dasharray="6 4" stroke-width="1.5"/>
+  <text x="795" y="280" text-anchor="middle" font-size="14" font-weight="700" fill="#92400e">Space link</text>
+  <text x="795" y="304" text-anchor="middle" font-size="12" fill="#78350f">batched,</text>
+  <text x="795" y="322" text-anchor="middle" font-size="12" fill="#78350f">store &amp; forward</text>
+  <text x="795" y="346" text-anchor="middle" font-size="12" fill="#78350f">light-time delay</text>
+  <text x="795" y="370" text-anchor="middle" font-size="12" fill="#78350f">survives blackouts</text>
+
+  <text x="795" y="503" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">downlink: data, alerts, reports</text>
+  <text x="795" y="572" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">uplink: notes, commands</text>
+
+  <!-- Ground app -->
+  <rect x="880" y="95" width="290" height="500" rx="16" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="1025" y="124" text-anchor="middle" font-size="18" font-weight="700" fill="#15803d">GROUND STATION APP</text>
+
+  <rect x="900" y="140" width="250" height="76" rx="10" fill="#ffffff" stroke="#86efac"/>
+  <text x="1025" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Ground web app</text>
+  <text x="1025" y="187" text-anchor="middle" font-size="12" fill="#475569">Flight Surgeon: full medical view</text>
+  <text x="1025" y="205" text-anchor="middle" font-size="12" fill="#475569">Mission Control: status only</text>
+
+  <rect x="900" y="228" width="250" height="58" rx="10" fill="#ffffff" stroke="#86efac"/>
+  <text x="1025" y="252" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">AI assistant</text>
+  <text x="1025" y="273" text-anchor="middle" font-size="12" fill="#475569">same privacy rules as the people</text>
+
+  <rect x="900" y="298" width="250" height="58" rx="10" fill="#ffffff" stroke="#86efac"/>
+  <text x="1025" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Mission Control dashboard</text>
+  <text x="1025" y="343" text-anchor="middle" font-size="12" fill="#475569">agent health · alerts · traces</text>
+
+  <rect x="900" y="368" width="250" height="58" rx="10" fill="#ffffff" stroke="#86efac"/>
+  <text x="1025" y="392" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Data is minutes behind</text>
+  <text x="1025" y="413" text-anchor="middle" font-size="12" fill="#475569">crew act first; ground follows</text>
+
+  <rect x="900" y="482" width="250" height="95" rx="10" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="1025" y="510" text-anchor="middle" font-size="15" font-weight="700" fill="#14532d">ground.db (SQLite)</text>
+  <text x="1025" y="533" text-anchor="middle" font-size="12" fill="#334155">replica, as of the last</text>
+  <text x="1025" y="556" text-anchor="middle" font-size="12" fill="#334155">delivered bundle</text>
+
+  <!-- Arrows (drawn last so they sit on top of the boxes) -->
+  <line x1="220" y1="305" x2="266" y2="305" stroke="#475569" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="712" y1="515" x2="876" y2="515" stroke="#475569" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="878" y1="550" x2="714" y2="550" stroke="#475569" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+
+  <!-- Tech strip -->
+  <rect x="30" y="620" width="1140" height="70" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="600" y="648" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Technologies</text>
+  <text x="600" y="673" text-anchor="middle" font-size="13" fill="#334155">Python 3 (standard library) · SQLite · HTML / CSS / JavaScript · Canvas &amp; SVG · Claude API (optional) · NASA OSDR data · GitHub · Render</text>
+</svg>
