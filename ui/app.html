@@ -157,6 +157,10 @@
   .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 100vw; z-index: 30;
     background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column;
     box-shadow: -12px 0 32px rgba(0, 0, 0, .35); }
+  .drawer #chatLog { font-size: 13.5px; line-height: 1.45; }
+  .drawer #chatLog .tier { font-size: 10px; padding: 0 6px; }
+  .drawer #chatIn { font-size: 13px; padding: 7px 10px; }
+  .drawer #chatForm button { font-size: 13px; padding: 7px 14px; }
   .fab { position: fixed; right: 20px; bottom: 20px; z-index: 35; border-radius: 999px; padding: 12px 18px; font-weight: 700;
     background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; box-shadow: 0 8px 24px rgba(90, 169, 255, .35); }
   .fab:hover { filter: brightness(1.08); }
@@ -637,15 +641,7 @@ function vAsk() {
   $("aiDrawer").innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)"><b style="white-space:nowrap">✨ Ask AstroGuard</b><span id="aiStatus">${aiStatusHTML(online)}</span><span class="grow"></span>
         <button id="chatReset" style="font-size:12px;padding:3px 8px" title="Start a new conversation">New chat</button><button id="chatClose" style="font-size:12px;padding:3px 8px" aria-label="Close assistant">✕</button></div>
-      <div style="padding:8px 14px 0;font-size:12px" class="muted">🤖 <b style="color:var(--text)">AI assistant, not a doctor.</b> Sees only data <b style="color:var(--text)">you</b> may see, cites NASA guidance, and routes decisions to your CMO or flight surgeon. Emergency? Press <b style="color:var(--crit)">⚠ EMERGENCY</b>.
-        <details style="margin-top:4px"><summary style="cursor:pointer;color:var(--accent)">How this AI agent works</summary>
-          <ol style="padding-left:18px;margin:4px 0">
-            <li>Checks your real data with tools that run with <i>your</i> permissions.</li>
-            <li>Looks at the cabin to separate environmental from personal causes.</li>
-            <li>Grounds answers in the NASA knowledge base and cites sources.</li>
-            <li>Red-flag symptoms are caught by fixed code, not the AI.</li>
-            <li>No AI available? Falls back to rule-based guidance.</li>
-          </ol>Demo uses a cloud model as a stand-in for an onboard model (Earth is up to 22 min away).</details></div>
+      <div style="padding:8px 14px 0;font-size:12px" class="muted">🤖 <b style="color:var(--text)">AI assistant, not a doctor.</b> In an emergency, press <b style="color:var(--crit)">⚠ EMERGENCY</b>.</div>
       <div id="chatLog" style="flex:1;overflow-y:auto;padding:8px 14px"></div>
       <div id="chatSugg" style="padding:0 12px">${chatSuggestions().map(s => `<button class="sugg" style="margin:3px;font-size:12px;padding:4px 9px;text-align:left">${esc(s)}</button>`).join("")}</div>
       <form id="chatForm" class="row2" style="padding:10px 14px 14px"><input id="chatIn" placeholder="Ask about your health, a reading, or the cabin…" autocomplete="off"><button class="primary" type="submit">Ask</button></form>`;
@@ -656,8 +652,7 @@ function vAsk() {
   $("chatClose").onclick = closeDrawer;
 }
 function aiStatusHTML(online) {
-  return online ? `<span class="st ok" title="${esc(ME.node?.assistant || "")}">AI online</span>`
-                : `<span class="st warn" title="No AI model available: using rule-based guidance">AI offline · rule-based</span>`;
+  return online ? `<span class="st ok" title="${esc(ME.node?.assistant || "")}">AI online</span>` : "";
 }
 function fmtReply(t) {
   return esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\[([a-z0-9-]+)\]/g, '<span class="cite">[$1]</span>')
@@ -673,8 +668,9 @@ function renderChat() {
           ${USER.crew_id ? `<span class="grow"></span><button class="sos" data-proto="${m.meta.suggested_protocol || m.meta.red_flag}">Start emergency</button>` : ""}</div>` : ""}
         ${m.meta?.self_harm ? `<div class="banner warn" style="margin-bottom:6px"><span>💙 You don't have to handle this alone. You can request a private conference with your flight surgeon or psychologist right now, and it stays private.</span></div>` : ""}
         <div style="background:var(--panel2);border:1px solid var(--line);padding:10px 12px;border-radius:12px 12px 12px 2px">${fmtReply(m.text)}</div>
-        <div class="muted" style="font-size:11px;margin-top:4px">${m.meta?.mode === "ai" ? "🤖 AI-generated" : "📘 Rule-based (AI offline)"}${m.meta?.tools_used?.length ? " · checked: " + [...new Set(m.meta.tools_used)].map(t => TOOL_LABELS[t] || t).join(", ") : ""}${m.meta?.citations?.length ? " · sources: " + [...new Map(m.meta.citations.map(c => [c.id, c])).values()].map(c => `<span class="cite" title="${esc(c.source)}">${esc(c.id)}</span>`).join(" ") : ""}</div>
-        ${m.meta?.notice ? `<div class="muted" style="font-size:11px">${esc(m.meta.notice)}</div>` : ""}</div>`).join("")
+        <div class="muted" style="font-size:11px;margin-top:4px">${[m.meta?.mode === "ai" ? "🤖 AI-generated" : "",
+          m.meta?.tools_used?.length ? "checked: " + [...new Set(m.meta.tools_used)].map(t => TOOL_LABELS[t] || t).join(", ") : "",
+          m.meta?.citations?.length ? "sources: " + [...new Map(m.meta.citations.map(c => [c.id, c])).values()].map(c => `<span class="cite" title="${esc(c.source)}">${esc(c.id)}</span>`).join(" ") : ""].filter(Boolean).join(" · ")}</div></div>`).join("")
     : `<p class="muted">Ask a question, or tap a suggestion below.</p>`;
   log.scrollTop = log.scrollHeight;
   log.querySelectorAll("[data-proto]").forEach(b => b.onclick = () => openSOS(b.dataset.proto));
