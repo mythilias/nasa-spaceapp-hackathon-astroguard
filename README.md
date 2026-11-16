@@ -98,96 +98,14 @@ Needs **Python 3.10+ only**. The core needs no packages and no internet.
 Deep links for demos: `http://127.0.0.1:8000/#code=7316&view=health` (views: `health`, `checkin`, `body`, `routine`, `crew`, `privacy`, `ops`; `ask` opens the assistant panel). Each browser tab keeps its own login.
 
 ## Architecture
+![AstroGuard architecture diagram](docs/architecture.svg)
 
-```mermaid
-flowchart LR
-    subgraph DEV["⌚ Crew devices"]
-        D1["Smart shirt · Fitness band<br/>Glucometer · BP cuff"]
-    end
+Two apps share one codebase: the **spacecraft app** runs everything onboard (monitoring agents, AI
+assistant, health assessment, master database), and the **ground station app** is a delayed copy for
+the flight surgeon and mission control, synced in batches over a simulated space link.
 
-    subgraph SC["🛰 SPACECRAFT APP · port 8000"]
-        UI1["Crew web app<br/>HTML · CSS · JavaScript"]
-        API1["REST API<br/>Python"]
-        AG["5 monitoring agents<br/>+ coordinator + supervisor"]
-        AI["✨ AstroGuard AI assistant<br/>Claude API"]
-        KB["NASA knowledge base<br/>(RAG search)"]
-        DB1[("onboard.db<br/>SQLite · master")]
-    end
-
-    subgraph GR["🌍 GROUND APP · port 8001"]
-        UI2["Flight surgeon &<br/>Mission Control web app"]
-        DB2[("ground.db<br/>SQLite · copy")]
-    end
-
-    D1 -- "live / batch data" --> API1
-    UI1 <--> API1
-    API1 <--> AG
-    API1 <--> AI
-    AI --> KB
-    AG --> DB1
-    API1 <--> DB1
-    UI2 <--> DB2
-    DB1 == "delayed space link<br/>store-and-forward batches" ==> DB2
-    DB2 -. "notes & commands (uplink)" .-> DB1
-```
-
-### Technologies
-| Layer | Technology |
-|---|---|
-| Backend (both apps) | **Python 3** standard library: web server, threads, `sqlite3`, `hmac` |
-| Database | **SQLite**, one shared schema with a separate copy per app |
-| Frontend | **HTML, CSS, JavaScript** (no framework), **Canvas** charts, **SVG** body map |
-| AI assistant | **Anthropic Claude API** (`claude-opus-5-5`) with tool use; rule-based fallback when offline |
-| Knowledge base | NASA HRP / NASA-STD-3001 summaries, searched with **BM25** (RAG) |
-| Monitoring | 5 rule-based agents, a coordinator and a self-healing supervisor (Python threads) |
-| Sync | **Store-and-forward link** over HTTP/JSON, inspired by NASA's delay-tolerant networking |
-| Security | **HMAC-SHA256** signed sessions, role-based need-to-know access, audit log |
-| Hosting | **GitHub** (code), **Render** (public demo) |
-
-### Detailed view
-
-```
-            SPACECRAFT: ONBOARD NODE (port 8000)                         EARTH: GROUND NODE (port 8001)
- ┌────────────────────────────────────────────────────────────┐      ┌───────────────────────────────────────┐
- │ Wearables + habitat sensors + crew check-ins                │      │ Replica of crew data (as of last sync)│
- │        │                                                    │      │ Flight Surgeon · Mission Control UI   │
- │        ▼                                                    │      │ AI assistant (ground data only)       │
- │ 5 specialist agents (rules: detect) ──► Coordinator (root   │      └───────────────▲───────────────────────┘
- │   Cardio · Respiratory · Sleep · Radiation · Environment    │                      │
- │        │                             cause) ──► alerts      │   DOWNLINK: data, alerts, SBAR reports,
- │        ▼                                                    │   audit (delayed, stored during blackout)
- │ Assessment · recommendations · routine · emergency          │ ─────────────────────┘
- │        │                                                    │ ◄────────────────────┐
- │ ACCESS CONTROL: roles · need-to-know · emergency unlock ·   │   UPLINK: surgeon notes, commands,
- │   audit log  (applies to humans AND AI tools)               │   ground audit entries
- │        │                                                    │
- │ AI agents (Claude; onboard model in flight):                │
- │   Medical Assistant (tools run with asker's permissions)    │
- │   Ground briefing (SBAR) · Alert explainer (RAG)            │
- │   → fallback to rule-based guidance if unavailable          │
- └────────────────────────────────────────────────────────────┘
-```
-
-### Project layout
-```
-spacecraft_app.py        onboard node (crew, agents, AI, device ingestion, master database)
-ground_app.py            ground station node (flight surgeon, mission control, replica)
-run_mission.py           starts both nodes with a shared link key
-run_demo.py              all-in-one demo (every role on one server)
-astroguard/              shared code used by both apps
-  core/                  agents.py (specialists, coordinator, supervisor) · health.py (assessment, recommendations,
-                         routine, per-viewer projection) · auth.py (login, need-to-know rules) · guides.py
-                         (indicator guides, protocols, environments) · knowledge.py + explainer.py (RAG)
-                         · assistant.py (AI Medical Assistant + SBAR agent)
-  db/database.py         the common database schema + replication helpers (each node has its own copy)
-  sync/link.py           store-and-forward space link (delay, blackout, retry)
-  ingest/devices.py      device adapters + validation for wearables and medical devices
-  sim/telemetry.py       crew and habitat simulator with injectable scenarios
-  server/app.py          HTTP API, node modes, replication, access enforcement
-ui/                      app.html (crew & ground app) · ops.html (Mission Control observability)
-tools/device_simulator.py  pushes sample smart-shirt / fitness-band / glucometer / cuff data
-docs/                    SYNC.md (how spacecraft↔ground sync works) · DEVICES.md (device integration)
-```
+📄 **Full details:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (components, data flow, technologies, project layout)
+· [docs/SYNC.md](docs/SYNC.md) (how syncing works) · [docs/DEVICES.md](docs/DEVICES.md) (device integration)
 
 ## Real NASA data in the app
 AstroGuard loads **NASA OSDR [OSD-575](https://osdr.nasa.gov/bio/repo/data/studies/OSD-575)**, the Inspiration4 crew's comprehensive metabolic panel: 19 blood markers for 4 astronauts at 7 timepoints, from 92 days before launch to 194 days after return. The file is stored unchanged in `datasets/osdr/` and processed by `astroguard/core/nasa_data.py`. It's used to:
